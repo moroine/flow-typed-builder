@@ -1,0 +1,19 @@
+{
+  "name": "flow-typed-builder",
+  "version": "0.0.1",
+  "description": "flow-typed-builder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moroine/flow-typed-builder.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/moroine/flow-typed-builder/issues"
+  },
+  "homepage": "https://github.com/moroine/flow-typed-builder#readme"
+}
