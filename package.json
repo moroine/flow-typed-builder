@@ -36,5 +36,8 @@
     "flow-bin": "^0.170.0",
     "husky": "^7.0.4",
     "jest": "^27.4.7"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.16.12"
   }
 }
