@@ -1,0 +1,46 @@
+[ignore]
+; ignore is using regex syntax
+<PROJECT_ROOT>/node_modules/.*
+
+[include]
+; include is using path (no regex)
+
+[libs]
+; libs is using path (no regex)
+flow-typed
+
+[lints]
+all=error
+deprecated-utility=error
+implicit-inexact-object=error
+ambiguous-object-type=error
+nonstrict-import=off
+# Following rule has false positive
+unnecessary-optional-chain=off
+
+[declarations]
+; declarations is using regex syntax
+
+[untyped]
+; untyped is using regex syntax
+
+[options]
+module.file_ext=.js
+module.file_ext=.jsx
+module.file_ext=.mjs
+module.file_ext=.json
+exact_by_default=true
+experimental.const_params=true
+munge_underscores=true
+include_warnings=true
+module.use_strict=true
+experimental.strict_call_arity=true
+; Fixes out of shared memory error for Mac Rosetta 2, see https://github.com/facebook/flow/issues/8538
+sharedmemory.heap_size=3221225472
+
+[strict]
+nonstrict-import
+unclear-type
+unsafe-getters-setters
+untyped-import
+untyped-type-import

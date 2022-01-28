@@ -3,17 +3,38 @@
   "version": "0.0.1",
   "description": "flow-typed-builder",
   "main": "index.js",
+  "engines": {
+    "node": ">=16"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "flow": "flow",
+    "build": "babel src/ -d lib/",
+    "prepublish": "npm run build",
+    "lint": "eslint --cache . --ext .js,.jsx,.flow",
+    "prepare": "husky install $PWD/.husky",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/moroine/flow-typed-builder.git"
   },
-  "author": "",
+  "author": "Moroine Bentefrit <moroine.bentefrit@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/moroine/flow-typed-builder/issues"
   },
-  "homepage": "https://github.com/moroine/flow-typed-builder#readme"
+  "homepage": "https://github.com/moroine/flow-typed-builder#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.16.8",
+    "@babel/core": "^7.16.12",
+    "@babel/preset-flow": "^7.16.7",
+    "@commitlint/cli": "^16.1.0",
+    "@commitlint/config-conventional": "^16.0.0",
+    "babel-jest": "^27.4.6",
+    "eslint": "^7.32.0",
+    "eslint-config-nugit": "^2.0.2",
+    "flow-bin": "^0.170.0",
+    "husky": "^7.0.4",
+    "jest": "^27.4.7"
+  }
 }

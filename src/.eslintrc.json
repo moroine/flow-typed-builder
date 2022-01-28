@@ -1,0 +1,18 @@
+{
+  "extends": "nugit/base",
+  "rules": {
+    "flowtype/require-valid-file-annotation": [
+      "error",
+      "always",
+      {
+        "annotationStyle": "line",
+        "strict": false
+      }
+    ]
+  },
+  "settings": {
+    "flowtype": {
+      "onlyFilesWithFlowAnnotation": false
+    }
+  }
+}
