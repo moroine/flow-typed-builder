@@ -38,6 +38,8 @@
     "jest": "^27.4.7"
   },
   "dependencies": {
-    "@babel/parser": "^7.16.12"
+    "@babel/generator": "^7.16.8",
+    "@babel/parser": "^7.16.12",
+    "@babel/types": "^7.16.8"
   }
 }

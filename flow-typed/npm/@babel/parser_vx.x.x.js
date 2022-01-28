@@ -16,13 +16,15 @@
 // @flow
 
 declare module '@babel/parser' {
+  import type { Expression, File } from '@babel/types';
+
   /**
    * Parse the provided code as an entire ECMAScript program.
    */
   declare export function parse(
     input: string,
     options?: ParserOptions
-  ): ParseResult<$Exports<'@babel/types'>['File']>;
+  ): ParseResult<File>;
 
   /**
    * Parse the provided code as a single expression.
@@ -30,8 +32,9 @@ declare module '@babel/parser' {
   declare export function parseExpression(
     input: string,
     options?: ParserOptions
-  ): ParseResult<$Exports<'@babel/types'>['Expression']>;
-  declare export interface ParserOptions {
+  ): ParseResult<Expression>;
+
+  declare export type ParserOptions = {
     /**
      * By default, await use is not allowed outside of an async function.
      * Set this to true to accept such code.
@@ -125,10 +128,11 @@ declare module '@babel/parser' {
      * Adds all parsed tokens to a tokens property on the File node.
      */
     tokens?: boolean,
-  }
-  declare export
 
-type ParserPlugin =
+    ...,
+  }
+
+  declare export type ParserPlugin =
     | ParserPluginWithOptions
     | 'asyncDoExpressions'
     | 'asyncGenerators'
@@ -201,8 +205,8 @@ type ParserPlugin =
     code: string,
     reasonCode: string,
   }
-  declare type ParseResult<Result> = {
-    ...Result,
+
+  declare type ParseResult<Result> = Result & {
     errors: ParseError[],
     ...,
   };
