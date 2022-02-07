@@ -12,7 +12,7 @@
     "prepublish": "npm run build",
     "lint": "eslint --cache . --ext .js,.jsx,.flow",
     "prepare": "husky install $PWD/.husky",
-    "test": "jest"
+    "test": "jest src"
   },
   "repository": {
     "type": "git",
@@ -31,11 +31,13 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "babel-jest": "^27.4.6",
+    "chalk": "^4.1.2",
     "eslint": "^7.32.0",
     "eslint-config-nugit": "^2.0.2",
     "flow-bin": "^0.170.0",
     "husky": "^7.0.4",
-    "jest": "^27.4.7"
+    "jest": "^27.4.7",
+    "jest-specific-snapshot": "^5.0.0"
   },
   "dependencies": {
     "@babel/generator": "^7.16.8",

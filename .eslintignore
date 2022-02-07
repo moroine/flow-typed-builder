@@ -94,3 +94,5 @@ typings/
 lib
 
 flow-typed
+
+src/tests/fixtures/

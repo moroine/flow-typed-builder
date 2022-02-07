@@ -1,6 +1,7 @@
 {
   "extends": "nugit/base",
   "rules": {
+    "eqeqeq": ["error", "ignore"],
     "flowtype/require-valid-file-annotation": [
       "error",
       "always",
