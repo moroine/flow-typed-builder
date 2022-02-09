@@ -15,5 +15,10 @@ type A = {|
   n: "bar",
   o: empty,
   p: mixed,
+  r: -1,
+  s: -2,
   t: symbol,
+  +u: symbol,
+  v: [1, 2, 3],
+  w: $ReadOnlyArray<string>,
 |};

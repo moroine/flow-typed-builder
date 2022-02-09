@@ -25,11 +25,64 @@ import {
   voidTypeAnnotation,
   emptyTypeAnnotation,
   symbolTypeAnnotation,
+  isTSTypeAnnotation,
+  variance,
+  tupleExpression,
+  tupleTypeAnnotation,
+  genericTypeAnnotation,
+  identifier,
+  typeParameterInstantiation,
+  arrayTypeAnnotation,
 } from "@babel/types";
 import type { FlowType,TSLiteralType, Literal, InterfaceDeclaration, ObjectTypeAnnotation, ObjectTypeProperty, Program, Statement, TSInterfaceBody, TSInterfaceDeclaration, TSType, TSTypeAliasDeclaration, TSTypeAnnotation, TSTypeElement, TSTypeParameter, TSTypeParameterDeclaration, TypeAlias, TypeParameter, TypeParameterDeclaration } from '@babel/types';
 
+type Context = {|
+  readOnly?: boolean,
+|};
+
 function transformTSTypeAnnotation(input: TSTypeAnnotation): FlowType {
-  switch (input.typeAnnotation.type) {
+  return transformTsType(input.typeAnnotation);
+}
+
+function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
+  switch (input.type) {
+    case 'TSPropertySignature': {
+      if (input.key.type !== 'Identifier') {
+        throw new Error(`transformTSTypeElement: TSPropertySignature not supported key ${input.key.type}`);
+      }
+
+      if (input.typeAnnotation === null) {
+        throw new Error('transformTSTypeElement: TSPropertySignature not supported empty typeAnnotation');
+      }
+
+      return objectTypeProperty(
+        input.key,
+        transformTSTypeAnnotation(input.typeAnnotation),
+        input.readonly === true ? variance("plus") : null,
+      );
+    }
+    default: {
+      throw new Error('not supported');
+    }
+  }
+}
+
+function transformTSInterfaceBody(input: TSInterfaceBody): ObjectTypeAnnotation {
+  return objectTypeAnnotation(
+    input.body.map(transformTSTypeElement),
+  );
+}
+
+function transformTsType(input: TSType, ctx?: Context = {...null}): FlowType {
+  switch (input.type) {
+    case 'TSTypeLiteral':
+      return objectTypeAnnotation(
+        input.members.map(transformTSTypeElement),
+        null,
+        null,
+        null,
+        true,
+      );
     case 'TSStringKeyword':
       return stringTypeAnnotation();
     case 'TSNumberKeyword':
@@ -47,18 +100,33 @@ function transformTSTypeAnnotation(input: TSTypeAnnotation): FlowType {
     case 'TSObjectKeyword': {
       const t = objectTypeAnnotation([], null, null, null, false);
       t.inexact = true;
+
+      if (ctx.readOnly === true) {
+        return genericTypeAnnotation(
+          identifier('$ReadOnly'),
+          typeParameterInstantiation([t]),
+        );
+      }
+
       return t;
     }
     case 'TSLiteralType': {
-      switch (input.typeAnnotation.literal.type) {
+      switch (input.literal.type) {
         case 'NumericLiteral':
-          return numberLiteralTypeAnnotation(input.typeAnnotation.literal.value);
+          return numberLiteralTypeAnnotation(input.literal.value);
         case 'BooleanLiteral':
-          return booleanLiteralTypeAnnotation(input.typeAnnotation.literal.value);
+          return booleanLiteralTypeAnnotation(input.literal.value);
         case 'StringLiteral':
-          return stringLiteralTypeAnnotation(input.typeAnnotation.literal.value);
+          return stringLiteralTypeAnnotation(input.literal.value);
+        case 'UnaryExpression': {
+          const exp = input.literal;
+          if (exp.argument.type !== 'NumericLiteral' || exp.operator !== '-') {
+            throw new Error(`transformTSTypeAnnotation/TSLiteralType/UnaryExpression: not supported ${exp.operator} ${exp.argument.type}`);
+          }
+          return numberLiteralTypeAnnotation(- exp.argument.value);
+        }
         default: {
-          throw new Error(`transformTSTypeAnnotation/TSLiteralType: not supported ${input.typeAnnotation.literal.type}`);
+          throw new Error(`transformTSTypeAnnotation/TSLiteralType: not supported ${input.literal.type}`);
         }
       }
     }
@@ -68,50 +136,35 @@ function transformTSTypeAnnotation(input: TSTypeAnnotation): FlowType {
       return mixedTypeAnnotation();
     case 'TSSymbolKeyword': 
       return symbolTypeAnnotation();
-    default: {
-      throw new Error(`transformTSTypeAnnotation: not supported ${input.typeAnnotation.type}`);
+    case 'TSTypeOperator': {
+      switch (input.operator) {
+        case 'unique':
+          return transformTsType(input.typeAnnotation);
+        case 'readonly':
+          return transformTsType(input.typeAnnotation, { readOnly: true })
+        default:
+          throw new Error(`transformTSTypeAnnotation/TSTypeOperator: not supported ${input.operator}`);
+      }
     }
-  }
-}
-
-function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
-  switch (input.type) {
-    case 'TSPropertySignature': {
-      if (input.key.type !== 'Identifier') {
-        throw new Error(`transformTSTypeElement: TSPropertySignature not supported key ${input.key.type}`);
+    case 'TSTupleType': {
+      return tupleTypeAnnotation(input.elementTypes.map(el => transformTsType(
+        el.type === 'TSNamedTupleMember'
+          ? el.elementType
+          : el,
+      )));
+    }
+    case 'TSArrayType': {
+      if (ctx.readOnly === true) {
+        return genericTypeAnnotation(
+          identifier('$ReadOnlyArray'),
+          typeParameterInstantiation(
+            [transformTsType(input.elementType)],
+          ),
+        );
       }
 
-      if (input.typeAnnotation === null) {
-        throw new Error('transformTSTypeElement: TSPropertySignature not supported empty typeAnnotation');
-      }
-
-      return objectTypeProperty(
-        input.key,
-        transformTSTypeAnnotation(input.typeAnnotation),
-      );
+      return arrayTypeAnnotation(transformTsType(input.elementType));
     }
-    default: {
-      throw new Error('not supported');
-    }
-  }
-}
-
-function transformTSInterfaceBody(input: TSInterfaceBody): ObjectTypeAnnotation {
-  return objectTypeAnnotation(
-    input.body.map(transformTSTypeElement),
-  );
-}
-
-function transformTsType(input: TSType): FlowType {
-  switch (input.type) {
-    case 'TSTypeLiteral':
-      return objectTypeAnnotation(
-        input.members.map(transformTSTypeElement),
-        null,
-        null,
-        null,
-        true,
-      );
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
       // eslint-disable-next-line no-unused-vars
