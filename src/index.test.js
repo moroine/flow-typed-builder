@@ -25,7 +25,7 @@ async function executeTest(name) {
   const output = tsToFlow(input);
 
   expect(output).toBe(expected);
-  // $FlowExpectedError
+  // $FlowExpectedError[incompatible-call]
   expect(output).toBeValidFlowTypeDeclarations();
 }
 
