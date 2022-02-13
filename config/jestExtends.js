@@ -1,3 +1,5 @@
+/* eslint-env node, jest */
+
 const { execFileSync } = require('child_process');
 const chalk = require('chalk');
 const flow = require('flow-bin');

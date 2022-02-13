@@ -1,45 +1,11 @@
 // @flow
 
+/* eslint-disable no-use-before-define, no-console */
+
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
-import {
-  anyTypeAnnotation,
-  booleanLiteralTypeAnnotation,
-  stringLiteralTypeAnnotation,
-  booleanTypeAnnotation,
-  numberLiteralTypeAnnotation,
-  emptyStatement,
-  file,
-  interfaceDeclaration,
-  mixedTypeAnnotation,
-  nullLiteralTypeAnnotation,
-  numberTypeAnnotation,
-  numericLiteral,
-  objectTypeAnnotation,
-  objectTypeProperty,
-  program,
-  stringTypeAnnotation,
-  typeAlias,
-  typeParameter,
-  typeParameterDeclaration,
-  voidTypeAnnotation,
-  emptyTypeAnnotation,
-  symbolTypeAnnotation,
-  isTSTypeAnnotation,
-  variance,
-  tupleExpression,
-  tupleTypeAnnotation,
-  genericTypeAnnotation,
-  identifier,
-  typeParameterInstantiation,
-  arrayTypeAnnotation,
-  variableDeclaration,
-  variableDeclarator,
-} from "@babel/types";
-import type {
+import type { Expression,
   FlowType,
-  TSLiteralType,
-  Literal,
   InterfaceDeclaration,
   ObjectTypeAnnotation,
   ObjectTypeProperty,
@@ -56,10 +22,36 @@ import type {
   TypeAlias,
   TypeParameter,
   TypeParameterDeclaration,
-  VariableDeclarator,
-  Expression,
-} from "@babel/types";
-import { unionTypeAnnotation } from '@babel/types';
+  VariableDeclarator } from '@babel/types';
+import { anyTypeAnnotation,
+  arrayTypeAnnotation,
+  booleanLiteralTypeAnnotation,
+  booleanTypeAnnotation,
+  emptyStatement,
+  emptyTypeAnnotation,
+  file,
+  genericTypeAnnotation,
+  identifier,
+  interfaceDeclaration,
+  mixedTypeAnnotation,
+  nullLiteralTypeAnnotation,
+  numberLiteralTypeAnnotation,
+  numberTypeAnnotation,
+  objectTypeAnnotation,
+  objectTypeProperty,
+  program,
+  stringLiteralTypeAnnotation,
+  stringTypeAnnotation,
+  symbolTypeAnnotation,
+  tupleTypeAnnotation,
+  typeAlias,
+  typeParameter,
+  typeParameterDeclaration,
+  typeParameterInstantiation,
+  unionTypeAnnotation,
+  variableDeclaration,
+  variableDeclarator,
+  variance, voidTypeAnnotation } from '@babel/types';
 
 type Context = {|
   readOnly?: boolean,
@@ -83,7 +75,7 @@ function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
       return objectTypeProperty(
         input.key,
         transformTSTypeAnnotation(input.typeAnnotation),
-        input.readonly === true ? variance("plus") : null,
+        input.readonly === true ? variance('plus') : null,
       );
     }
     default: {
@@ -98,7 +90,7 @@ function transformTSInterfaceBody(input: TSInterfaceBody): ObjectTypeAnnotation 
   );
 }
 
-function transformTsType(input: TSType, ctx?: Context = {...null}): FlowType {
+function transformTsType(input: TSType, ctx?: Context = { ...null }): FlowType {
   switch (input.type) {
     case 'TSTypeLiteral':
       return objectTypeAnnotation(
@@ -150,25 +142,25 @@ function transformTsType(input: TSType, ctx?: Context = {...null}): FlowType {
           if (exp.argument.type !== 'NumericLiteral' || exp.operator !== '-') {
             throw new Error(`transformTSTypeAnnotation/TSLiteralType/UnaryExpression: not supported ${exp.operator} ${exp.argument.type}`);
           }
-          return numberLiteralTypeAnnotation(- exp.argument.value);
+          return numberLiteralTypeAnnotation(-exp.argument.value);
         }
         default: {
           throw new Error(`transformTSTypeAnnotation/TSLiteralType: not supported ${input.literal.type}`);
         }
       }
     }
-    case 'TSNeverKeyword': 
+    case 'TSNeverKeyword':
       return emptyTypeAnnotation();
-    case 'TSUnknownKeyword': 
+    case 'TSUnknownKeyword':
       return mixedTypeAnnotation();
-    case 'TSSymbolKeyword': 
+    case 'TSSymbolKeyword':
       return symbolTypeAnnotation();
     case 'TSTypeOperator': {
       switch (input.operator) {
         case 'unique':
           return transformTsType(input.typeAnnotation);
         case 'readonly':
-          return transformTsType(input.typeAnnotation, { readOnly: true })
+          return transformTsType(input.typeAnnotation, { readOnly: true });
         default:
           throw new Error(`transformTSTypeAnnotation/TSTypeOperator: not supported ${input.operator}`);
       }
@@ -256,7 +248,6 @@ function transformVariableDeclarator(input: VariableDeclarator): VariableDeclara
   );
 }
 
-
 function transformStatement(input: Statement): Statement {
   switch (input.type) {
     case 'TSInterfaceDeclaration':
@@ -269,7 +260,7 @@ function transformStatement(input: Statement): Statement {
       return variableDeclaration(
         input.kind,
         input.declarations.map(transformVariableDeclarator),
-      )
+      );
     }
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
