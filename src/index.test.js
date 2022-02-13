@@ -31,7 +31,8 @@ async function executeTest(name) {
 
 describe('interface', () => {
   test.each([
-    ['basic'],
+    ['flowgen/basic'],
+    ['flowgen/boolean-literals'],
     ['interface'],
   ])('should transform %s', async (name) => {
     await executeTest(name);

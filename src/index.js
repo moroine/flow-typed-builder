@@ -33,8 +33,33 @@ import {
   identifier,
   typeParameterInstantiation,
   arrayTypeAnnotation,
+  variableDeclaration,
+  variableDeclarator,
 } from "@babel/types";
-import type { FlowType,TSLiteralType, Literal, InterfaceDeclaration, ObjectTypeAnnotation, ObjectTypeProperty, Program, Statement, TSInterfaceBody, TSInterfaceDeclaration, TSType, TSTypeAliasDeclaration, TSTypeAnnotation, TSTypeElement, TSTypeParameter, TSTypeParameterDeclaration, TypeAlias, TypeParameter, TypeParameterDeclaration } from '@babel/types';
+import type {
+  FlowType,
+  TSLiteralType,
+  Literal,
+  InterfaceDeclaration,
+  ObjectTypeAnnotation,
+  ObjectTypeProperty,
+  Program,
+  Statement,
+  TSInterfaceBody,
+  TSInterfaceDeclaration,
+  TSType,
+  TSTypeAliasDeclaration,
+  TSTypeAnnotation,
+  TSTypeElement,
+  TSTypeParameter,
+  TSTypeParameterDeclaration,
+  TypeAlias,
+  TypeParameter,
+  TypeParameterDeclaration,
+  VariableDeclarator,
+  Expression,
+} from "@babel/types";
+import { unionTypeAnnotation } from '@babel/types';
 
 type Context = {|
   readOnly?: boolean,
@@ -97,6 +122,8 @@ function transformTsType(input: TSType, ctx?: Context = {...null}): FlowType {
       return nullLiteralTypeAnnotation();
     case 'TSUndefinedKeyword':
       return voidTypeAnnotation();
+    case 'TSUnionType':
+      return unionTypeAnnotation(input.types.map(t => transformTsType(t)));
     case 'TSObjectKeyword': {
       const t = objectTypeAnnotation([], null, null, null, false);
       t.inexact = true;
@@ -209,6 +236,27 @@ function transformInterfaceDeclaration(input: TSInterfaceDeclaration): Interface
   );
 }
 
+function transformExpression<E: Expression>(input: E): E {
+  switch (input.type) {
+    case 'BooleanLiteral':
+      return input;
+    default: {
+      console.log(`transformExpression: not supported ${input.type}`);
+      // eslint-disable-next-line no-unused-vars
+      const n: empty = input.type;
+      return input;
+    }
+  }
+}
+
+function transformVariableDeclarator(input: VariableDeclarator): VariableDeclarator {
+  return variableDeclarator(
+    input.id,
+    input.init === null ? null : transformExpression(input.init),
+  );
+}
+
+
 function transformStatement(input: Statement): Statement {
   switch (input.type) {
     case 'TSInterfaceDeclaration':
@@ -217,6 +265,12 @@ function transformStatement(input: Statement): Statement {
       return transformTSTypeAliasDeclaration(input);
     case 'EmptyStatement':
       return input;
+    case 'VariableDeclaration': {
+      return variableDeclaration(
+        input.kind,
+        input.declarations.map(transformVariableDeclarator),
+      )
+    }
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
       // eslint-disable-next-line no-unused-vars
