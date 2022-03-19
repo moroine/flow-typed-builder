@@ -1865,7 +1865,7 @@ type CommentBlock = BaseComment & {
   };
 
   declare export type TSCallSignatureDeclaration = BaseNode & {
-    parameters: Array<Identifier | RestElement>,
+    parameters: Array<Identifier | RestElement | ObjectPattern | ArrayPattern>,
     type: 'TSCallSignatureDeclaration',
     typeAnnotation: TSTypeAnnotation | null,
     typeParameters: TSTypeParameterDeclaration | null,

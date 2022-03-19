@@ -1,7 +1,7 @@
-type A = {|
+type A = {
   a: void,
   b: string,
-  c: mixed,
+  c: any,
   d: number,
   e: boolean,
   f: null,
@@ -21,4 +21,4 @@ type A = {|
   +u: symbol,
   v: [1, 2, 3],
   w: $ReadOnlyArray<string>,
-|};
+};

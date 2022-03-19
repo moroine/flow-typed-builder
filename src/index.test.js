@@ -33,6 +33,7 @@ describe('interface', () => {
   test.each([
     ['flowgen/basic'],
     ['flowgen/boolean-literals'],
+    ['flowgen/interfaces'],
     ['interface'],
   ])('should transform %s', async (name) => {
     await executeTest(name);

@@ -9,7 +9,7 @@ expect.extend({
     try {
       execFileSync(
         flow,
-        ['check-contents', '--all', '--color=always', '--timeout=30'],
+        ['check-contents', '--color=always', '--timeout=30'],
         {
           input: source,
           stdio: ['pipe', 'pipe', 'pipe'],
