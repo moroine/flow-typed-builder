@@ -5,8 +5,10 @@
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
 import type { ArrayPattern,
-  ArrayTypeAnnotation,
   ClassBody,
+  ClassDeclaration,
+  ClassImplements,
+  DeclareClass,
   DeclareInterface,
   Expression,
   FlowType,
@@ -22,6 +24,7 @@ import type { ArrayPattern,
   ObjectTypeIndexer,
   ObjectTypeProperty,
   ObjectTypeSpreadProperty,
+  Pattern,
   PatternLike,
   Program,
   QualifiedTypeIdentifier,
@@ -31,11 +34,11 @@ import type { ArrayPattern,
   TSConstructSignatureDeclaration,
   TSEntityName,
   TSExpressionWithTypeArguments,
-  TSIndexSignature,
   TSInterfaceBody,
   TSInterfaceDeclaration,
   TSLiteralType,
   TSMethodSignature,
+  TSParameterProperty,
   TSType,
   TSTypeAliasDeclaration,
   TSTypeAnnotation,
@@ -49,12 +52,15 @@ import type { ArrayPattern,
   TypeParameterDeclaration,
   TypeParameterInstantiation,
   VariableDeclarator } from '@babel/types';
-import { anyTypeAnnotation, arrayTypeAnnotation,
+import { anyTypeAnnotation,
+  arrayTypeAnnotation,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
   classBody,
   classDeclaration,
   classMethod,
+  classProperty,
+  declareClass,
   declareInterface,
   declareVariable,
   emptyStatement,
@@ -108,14 +114,23 @@ function transformTSTypeAnnotation(input: TSTypeAnnotation | TypeAnnotation): Fl
   return transformTsType(input.typeAnnotation);
 }
 
-function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
+function transformTSTypeElement(
+  input: TSTypeElement,
+): ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty {
   switch (input.type) {
+    case 'TSCallSignatureDeclaration': {
+      return objectTypeCallProperty(
+        transformFunctionTypeAnnotation(
+          input,
+        ),
+      );
+    }
     case 'TSPropertySignature': {
       if (input.key.type !== 'Identifier' && input.key.type !== 'StringLiteral') {
         throw new Error(`transformTSTypeElement: TSPropertySignature not supported key ${input.key.type}`);
       }
 
-      if (input.typeAnnotation === null) {
+      if (input.typeAnnotation == null) {
         throw new Error('transformTSTypeElement: TSPropertySignature not supported empty typeAnnotation');
       }
 
@@ -147,7 +162,7 @@ function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
       return prop;
     }
     case 'TSConstructSignatureDeclaration': {
-      if (input.typeAnnotation === null) {
+      if (input.typeAnnotation == null) {
         throw new Error('transformTSTypeElement: TSConstructSignatureDeclaration not supported empty typeAnnotation');
       }
 
@@ -162,37 +177,36 @@ function transformTSTypeElement(input: TSTypeElement): ObjectTypeProperty {
 
       return prop;
     }
+    case 'TSIndexSignature': {
+      if (input.parameters.length !== 1) {
+        throw new Error('[transformTSTypeElement]: TSIndexSignature supports only identifiers');
+      }
+      const [id] = input.parameters;
+      if (id == null && id.type !== 'Identifier') {
+        throw new Error(`[transformTSTypeElement]: TSIndexSignature non-identifier not supported ${id.type}`);
+      }
+
+      if (id.typeAnnotation == null) {
+        throw new Error('[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation');
+      }
+
+      if (id.typeAnnotation.type !== 'TSTypeAnnotation') {
+        throw new Error(`[transformTSTypeElement]: TSIndexSignature not supported typeAnnotation ${id.typeAnnotation.type}`);
+      }
+
+      const key = transformTSTypeAnnotation(id.typeAnnotation);
+
+      if (input.typeAnnotation == null || input.typeAnnotation.type === 'Noop') {
+        throw new Error('[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation');
+      }
+      const value = transformTSTypeAnnotation(input.typeAnnotation);
+
+      return objectTypeIndexer(id, key, value, null);
+    }
     default: {
       throw new Error(`[transformTSTypeElement]: not supported ${input.type}`);
     }
   }
-}
-
-function transformTSIndexSignature(input: TSIndexSignature): ObjectTypeIndexer {
-  if (input.parameters.length !== 1) {
-    throw new Error('[transformTSTypeElement]: TSIndexSignature supports only identifiers');
-  }
-  const [id] = input.parameters;
-  if (id === null && id.type !== 'Identifier') {
-    throw new Error(`[transformTSTypeElement]: TSIndexSignature non-identifier not supported ${id.type}`);
-  }
-
-  if (id.typeAnnotation === null) {
-    throw new Error('[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation');
-  }
-
-  if (id.typeAnnotation.type !== 'TSTypeAnnotation') {
-    throw new Error(`[transformTSTypeElement]: TSIndexSignature not supported typeAnnotation ${id.typeAnnotation.type}`);
-  }
-
-  const key = transformTSTypeAnnotation(id.typeAnnotation);
-
-  if (input.typeAnnotation == null || input.typeAnnotation.type === 'Noop') {
-    throw new Error('[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation');
-  }
-  const value = transformTSTypeAnnotation(input.typeAnnotation);
-
-  return objectTypeIndexer(id, key, value, null);
 }
 
 function transformRestElement(input: RestElement): FunctionTypeParam {
@@ -272,7 +286,7 @@ function transformObjectPattern(input: ObjectPattern): FunctionTypeParam {
 }
 
 function transformPatternLike(input: PatternLike | null): FlowType {
-  if (input === null) {
+  if (input == null) {
     return nullLiteralTypeAnnotation();
   }
 
@@ -289,16 +303,12 @@ function transformPatternLike(input: PatternLike | null): FlowType {
   }
 }
 
-function transformFunctionTypeAnnotation(
-  input: TSCallSignatureDeclaration | TSConstructSignatureDeclaration | TSMethodSignature,
-): FunctionTypeAnnotation {
-  if (input.typeAnnotation == null) {
-    throw new Error('transformFunctionTypeAnnotation: TSCallSignatureDeclaration not supported empty typeAnnotation');
-  }
-
-  const returnType = transformTSTypeAnnotation(input.typeAnnotation);
-
-  const [params, restParams] = input.parameters.reduce(
+function transformFunctionParams(
+  parameters: $ReadOnlyArray<
+  Identifier | ObjectPattern | Pattern | RestElement | TSParameterProperty
+>,
+): [FunctionTypeParam[], FunctionTypeParam | null] {
+  const [params, restParams] = parameters.reduce(
     (acc, param) => {
       if (param.type === 'Identifier') {
         acc[0].push(param);
@@ -310,7 +320,7 @@ function transformFunctionTypeAnnotation(
         acc[1].push(param);
       } else {
         console.log(
-          `[transformFunctionTypeAnnotation]: not supported param type ${param.type}`,
+          `[transformFunctionParams]: not supported param type ${param.type}`,
           param,
         );
       }
@@ -351,57 +361,70 @@ function transformFunctionTypeAnnotation(
     return p;
   });
 
-  return functionTypeAnnotation(
-    input.typeParameters == null
-      ? null
-      : transformTSTypeParameterDeclaration(input.typeParameters),
+  return [
     paramsList,
     restParams.length === 0
       ? null
       : transformRestElement(restParams[0]),
+  ];
+}
+
+function transformFunctionTypeAnnotation(
+  input: TSCallSignatureDeclaration | TSConstructSignatureDeclaration | TSMethodSignature,
+): FunctionTypeAnnotation {
+  if (input.typeAnnotation == null) {
+    throw new Error('transformFunctionTypeAnnotation: TSCallSignatureDeclaration not supported empty typeAnnotation');
+  }
+
+  const returnType = transformTSTypeAnnotation(input.typeAnnotation);
+
+  const [params, restParam] = transformFunctionParams(input.parameters);
+
+  return functionTypeAnnotation(
+    input.typeParameters == null
+      ? null
+      : transformTSTypeParameterDeclaration(input.typeParameters),
+    params,
+    restParam,
     returnType,
   );
 }
 
-function transformTSCallSignatureDeclaration(
-  input: TSCallSignatureDeclaration,
-): ObjectTypeCallProperty {
-  return objectTypeCallProperty(
-    transformFunctionTypeAnnotation(
-      input,
-    ),
-  );
-}
-
-function transformTSInterfaceBody(input: TSInterfaceBody): ObjectTypeAnnotation {
-  const [props, indexers, callProps] = input.body.reduce(
+function createObjectTypeAnnotation(
+  statements: $ReadOnlyArray<ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty>,
+): ObjectTypeAnnotation {
+  const [props, indexers, callProps] = statements.reduce(
     (acc, statement) => {
       switch (statement.type) {
-        case 'TSIndexSignature':
-          acc[1].push(statement);
-          return acc;
-        case 'TSCallSignatureDeclaration':
+        case 'ObjectTypeCallProperty':
           acc[2].push(statement);
+          return acc;
+        case 'ObjectTypeIndexer':
+          acc[1].push(statement);
           return acc;
         default:
           acc[0].push(statement);
           return acc;
       }
     },
-    [[], [], [], []],
+    [[], [], []],
   );
 
-  return objectTypeAnnotation(
-    props.map(transformTSTypeElement),
-    indexers.length === 0
-      ? null
-      : indexers.map(transformTSIndexSignature),
-    callProps.length === 0
-      ? null
-      : callProps.map(transformTSCallSignatureDeclaration),
+  const value = objectTypeAnnotation(
+    props,
+    indexers.length === 0 ? null : indexers,
+    callProps.length === 0 ? null : callProps,
     null,
     false,
   );
+  value.inexact = true;
+  return value;
+}
+
+function transformTSInterfaceBody(input: TSInterfaceBody): ObjectTypeAnnotation {
+  const out = createObjectTypeAnnotation(input.body.map(transformTSTypeElement));
+  out.inexact = null;
+  return out;
 }
 
 function transformTSTypeParameterInstantiation(
@@ -434,14 +457,9 @@ function transformTSLiteralTypeElement(input: TSLiteralType['literal']): FlowTyp
 
 function transformTsType(input: TSType, ctx?: TransformTypeContext = { ...null }): FlowType {
   switch (input.type) {
-    case 'TSTypeLiteral':
-      return objectTypeAnnotation(
-        input.members.map(transformTSTypeElement),
-        null,
-        null,
-        null,
-        false,
-      );
+    case 'TSTypeLiteral': {
+      return createObjectTypeAnnotation(input.members.map(transformTSTypeElement));
+    }
     case 'TSStringKeyword':
       return stringTypeAnnotation();
     case 'TSNumberKeyword':
@@ -594,14 +612,14 @@ function transformInterfaceDeclaration(
   if (ctx.interfaces[input.id.name] != null) {
     // Flow doesn't allow duplicated interface names, we need to merge them
     const ast = ctx.interfaces[input.id.name];
-    if (params !== null) {
+    if (params != null) {
       if (ast.typeParameters == null) {
         ast.typeParameters = params;
       } else {
         ast.typeParameters.params.push(...params.params);
       }
     }
-    if (ext !== null) {
+    if (ext != null) {
       if (ast.extends == null) {
         ast.extends = ext;
       } else {
@@ -666,7 +684,7 @@ function transformExpression<E: Expression>(input: E): E {
 function transformVariableDeclarator(input: VariableDeclarator): VariableDeclarator {
   return variableDeclarator(
     input.id,
-    input.init === null ? null : transformExpression(input.init),
+    input.init == null ? null : transformExpression(input.init),
   );
 }
 
@@ -679,22 +697,228 @@ function transformClassMethod(input: ClassBody['body'][number]): ClassBody['body
         input.params,
         input.body,
       );
+    case 'ClassProperty':
+      return classProperty(
+        input.key,
+        input.value,
+        input.typeAnnotation?.type === 'TSTypeAnnotation'
+          ? typeAnnotation(transformTSTypeAnnotation(input.typeAnnotation))
+          : input.typeAnnotation,
+        input.decorators,
+        input.computed,
+        input.static,
+      );
     default:
+      console.log(`[transformClassMethod]: not supported ${input.type}`);
       return input;
   }
 }
 
-function transformClassBody(input: ClassBody): ClassBody {
-  return classBody(
-    input.body.map(t => transformClassMethod(t)),
+function transformClassDeclarationBody(input: ClassBody['body'][number]): ObjectTypeCallProperty | ObjectTypeProperty | null {
+  switch (input.type) {
+    case 'ClassMethod': {
+      const [params, restParam] = transformFunctionParams(input.params);
+
+      const fn = functionTypeAnnotation(
+        input.typeParameters != null && input.typeParameters.type === 'TSTypeParameterDeclaration'
+          ? transformTSTypeParameterDeclaration(input.typeParameters)
+          : null,
+        params,
+        restParam,
+        input.returnType != null && input.returnType.type === 'TSTypeAnnotation'
+          ? transformTSTypeAnnotation(input.returnType)
+          : anyTypeAnnotation(),
+      );
+
+      if (input.kind === 'constructor') {
+        return objectTypeCallProperty(
+          fn,
+        );
+      }
+
+      if (input.key.type !== 'Identifier' && input.key.type !== 'StringLiteral') {
+        throw new Error(`transformClassDeclarationBody: ClassMethod not supported key ${input.key.type}`);
+      }
+
+      const prop = objectTypeProperty(
+        input.key,
+        fn,
+        variance('plus'),
+      );
+
+      if (input.optional === true) {
+        prop.optional = true;
+      } else {
+        prop.method = true;
+      }
+
+      if (input.static === true) {
+        prop.static = true;
+      }
+
+      return prop;
+    }
+    case 'ClassProperty': {
+      if (input.key.type !== 'Identifier' && input.key.type !== 'StringLiteral') {
+        throw new Error(`transformClassDeclarationBody: ClassProperty not supported key ${input.key.type}`);
+      }
+
+      const prop = objectTypeProperty(
+        input.key,
+        input.typeAnnotation != null && input.typeAnnotation.type === 'TSTypeAnnotation'
+          ? transformTSTypeAnnotation(input.typeAnnotation)
+          : anyTypeAnnotation(),
+        input.readonly === true ? variance('plus') : null,
+      );
+
+      if (input.optional === true) {
+        prop.optional = true;
+      }
+
+      if (input.static === true) {
+        prop.static = true;
+      }
+
+      return prop;
+    }
+    case 'TSDeclareMethod': {
+      const returnType = input.returnType != null && input.returnType.type === 'TSTypeAnnotation'
+        ? transformTSTypeAnnotation(input.returnType)
+        : anyTypeAnnotation();
+      const [params, restParam] = transformFunctionParams(input.params);
+
+      const value = input.kind === 'get'
+        ? returnType
+        : functionTypeAnnotation(
+          input.typeParameters != null && input.typeParameters.type === 'TSTypeParameterDeclaration'
+            ? transformTSTypeParameterDeclaration(input.typeParameters)
+            : null,
+          params,
+          restParam,
+          returnType,
+        );
+
+      if (input.kind === 'constructor') {
+        return objectTypeCallProperty(value);
+      }
+
+      if (input.key.type !== 'Identifier' && input.key.type !== 'StringLiteral') {
+        throw new Error(`transformClassDeclarationBody: ClassMethod not supported key ${input.key.type}`);
+      }
+
+      const prop = objectTypeProperty(
+        input.key,
+        value,
+        variance('plus'),
+      );
+
+      if (input.optional === true) {
+        prop.optional = true;
+      } else if (input.kind !== 'get') {
+        prop.method = true;
+        prop.variance = null;
+      }
+
+      if (input.static === true) {
+        prop.static = true;
+      }
+
+      return prop;
+    }
+    default:
+      console.log(`[transformClassDeclarationBody]: not supported ${input.type}`);
+      return null;
+  }
+}
+
+function transformInterfaceExtends(
+  input: ClassImplements | TSExpressionWithTypeArguments,
+): InterfaceExtends {
+  if (input.type === 'TSExpressionWithTypeArguments') {
+    return interfaceExtends(
+      transformTSEntityName(input.expression),
+      input.typeParameters == null
+        ? null
+        : transformTSTypeParameterInstantiation(input.typeParameters),
+    );
+  }
+
+  return interfaceExtends(
+    input.id,
+    input.typeParameters,
   );
+}
+
+function transformClassDeclaration(input: ClassDeclaration): ClassDeclaration | DeclareClass {
+  const isDeclare = input.declare === true
+  || input.body.body.some(s => s.type === 'TSDeclareMethod');
+
+  const typeParameters = input.typeParameters != null && input.typeParameters.type === 'TSTypeParameterDeclaration'
+    ? transformTSTypeParameterDeclaration(input.typeParameters)
+    : null;
+
+  if (isDeclare) {
+    const [props, calls] = input.body.body
+      .map(s => transformClassDeclarationBody(s))
+      .reduce((acc, s) => {
+        if (s != null) {
+          if (s.type === 'ObjectTypeCallProperty') {
+            acc[1].push(s);
+          } else {
+            acc[0].push(s);
+          }
+        }
+
+        return acc;
+      }, [[], []]);
+
+    const ext = input.implements == null || input.implements.length === 0
+      ? null
+      : input.implements.map(transformInterfaceExtends);
+
+    const output = declareClass(
+      input.id,
+      typeParameters,
+      null,
+      objectTypeAnnotation(
+        props,
+        null,
+        calls,
+      ),
+    );
+
+    if (ext != null) {
+      output.mixins = ext;
+    }
+
+    return output;
+  }
+
+  const t = classDeclaration(
+    input.id,
+    input.superClass,
+    classBody(
+      input.body.body.map(s => transformClassMethod(s)),
+    ),
+    input.decorators,
+  );
+
+  if (typeParameters != null) {
+    t.typeParameters = typeParameters;
+  }
+
+  if (input.superTypeParameters != null && input.superTypeParameters.type === 'TSTypeParameterDeclaration') {
+    t.superTypeParameters = transformTSTypeParameterInstantiation(input.superTypeParameters);
+  }
+
+  return t;
 }
 
 function transformStatement(input: Statement, ctx: TransformContext): Statement | null {
   switch (input.type) {
     case 'TSInterfaceDeclaration': {
       const output = transformInterfaceDeclaration(input, ctx);
-      if (output !== null) {
+      if (output != null) {
         ctx.interfaces[output.id.name] = output;
       }
       return output;
@@ -703,23 +927,8 @@ function transformStatement(input: Statement, ctx: TransformContext): Statement 
       return transformTSTypeAliasDeclaration(input);
     case 'EmptyStatement':
       return input;
-    case 'ClassDeclaration': {
-      const t = classDeclaration(
-        input.id,
-        input.superClass,
-        transformClassBody(input.body),
-        input.decorators,
-      );
-
-      if (input.typeParameters != null && input.typeParameters.type === 'TSTypeParameterDeclaration') {
-        t.typeParameters = transformTSTypeParameterDeclaration(input.typeParameters);
-      }
-      if (input.superTypeParameters != null && input.superTypeParameters.type === 'TSTypeParameterDeclaration') {
-        t.superTypeParameters = transformTSTypeParameterInstantiation(input.superTypeParameters);
-      }
-
-      return t;
-    }
+    case 'ClassDeclaration':
+      return transformClassDeclaration(input);
     case 'VariableDeclaration': {
       if (input.declare === true) {
         if (input.declarations.length !== 1) {
@@ -755,7 +964,7 @@ function transformProgram(input: Program): Program {
   return program(
     input.body.reduce((acc, s) => {
       const output = transformStatement(s, ctx);
-      if (output !== null) {
+      if (output != null) {
         acc.push(output);
       }
       return acc;

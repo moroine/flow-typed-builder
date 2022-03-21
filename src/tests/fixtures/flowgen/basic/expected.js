@@ -21,4 +21,5 @@ type A = {
   +u: symbol,
   v: [1, 2, 3],
   w: $ReadOnlyArray<string>,
+  ...
 };

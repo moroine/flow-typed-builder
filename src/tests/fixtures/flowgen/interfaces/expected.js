@@ -31,7 +31,7 @@ interface Helper {
 interface ObjectSchema<T> {}
 interface ObjectSchemaDefinition<T> {}
 declare interface ObjectSchemaConstructor {
-  constructor(): ObjectSchema<{}>,
+  constructor(): ObjectSchema<{...}>,
   <T: {...}>(fields?: ObjectSchemaDefinition<T>): ObjectSchema<T>,
 }
 // should remove this in call signature
@@ -52,7 +52,7 @@ interface AbstractLevelDOWNConstructor {
 // should support omitting generic defaults in types, classes, interfaces
 interface Foo<T = symbol, U = number> {}
 interface FooBar extends Foo {}
-type Bar<T = number, U = string> = {};
+type Bar<T = number, U = string> = {...};
 
 class Baz<T = string, U = number> {}
 
@@ -88,6 +88,7 @@ interface ObjectBinding2 {
   ({
     a: string,
     b: number,
+    ...
   }): void,
 }
 // should handle typed array binding pattern
