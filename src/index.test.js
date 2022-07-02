@@ -34,6 +34,7 @@ describe('interface', () => {
     ['flowgen/basic'],
     ['flowgen/boolean-literals'],
     ['flowgen/classes'],
+    ['flowgen/computed'],
     ['flowgen/interfaces'],
     ['interface'],
   ])('should transform %s', async (name) => {

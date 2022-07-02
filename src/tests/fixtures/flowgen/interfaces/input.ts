@@ -24,8 +24,6 @@ interface User3 {
 
 // should handle all properties
 interface Props {
-  "aria-label": string;
-  "aria-labelledby": string;
   color: string;
   [key: string]: string;
 }
