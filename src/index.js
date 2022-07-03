@@ -13,7 +13,6 @@ import type { ArrayPattern,
   DeclareInterface,
   DeclareVariable,
   Expression,
-  Flow,
   FlowType,
   FunctionTypeAnnotation,
   FunctionTypeParam,
@@ -58,8 +57,7 @@ import type { ArrayPattern,
   TypeParameterInstantiation,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
-import {
-  anyTypeAnnotation,
+import { anyTypeAnnotation,
   arrayTypeAnnotation,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
@@ -73,7 +71,6 @@ import {
   declareVariable,
   emptyStatement,
   emptyTypeAnnotation,
-  exportNamedDeclaration,
   file,
   functionTypeAnnotation,
   functionTypeParam,
@@ -111,8 +108,7 @@ import {
   variableDeclaration,
   variableDeclarator,
   variance,
-  voidTypeAnnotation,
-} from "@babel/types";
+  voidTypeAnnotation } from '@babel/types';
 
 type TransformTypeFlags = {|
   readOnly?: boolean,
