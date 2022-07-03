@@ -32,10 +32,10 @@ describe('interface', () => {
     ['flowgen/classes'],
     ['flowgen/computed'],
     ['flowgen/interfaces'],
-    ['interface'],
-    ['intersection'],
     ['flowgen/string-literals'],
     ['flowgen/variables'],
+    ['interface'],
+    ['intersection'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });

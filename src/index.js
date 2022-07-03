@@ -98,6 +98,7 @@ import {
   stringLiteralTypeAnnotation,
   stringTypeAnnotation,
   symbolTypeAnnotation,
+  thisTypeAnnotation,
   tupleTypeAnnotation,
   typeAlias,
   typeAnnotation,
@@ -710,6 +711,9 @@ function transformTsType(
     }
     case 'TSIntersectionType': {
       return intersectionTypeAnnotation(input.types.map(t => transformTsType(t, ctx)));
+    }
+    case 'TSThisType': {
+      return thisTypeAnnotation();
     }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);

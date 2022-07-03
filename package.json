@@ -8,7 +8,7 @@
   },
   "scripts": {
     "flow": "flow",
-    "build": "babel src/ -d lib/",
+    "build": "babel src/ -d lib/ --ignore '**/*.test.js' --ignore '**/tests/**'",
     "prepublish": "npm run build",
     "lint": "eslint --cache . --ext .js,.jsx,.flow",
     "prepare": "husky install $PWD/.husky",
