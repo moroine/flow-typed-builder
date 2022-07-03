@@ -33,6 +33,7 @@ describe('interface', () => {
     ['flowgen/computed'],
     ['flowgen/interfaces'],
     ['interface'],
+    ['intersection'],
     ['flowgen/string-literals'],
     ['flowgen/variables'],
   ])('should transform %s', async (name) => {

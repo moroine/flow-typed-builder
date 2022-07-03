@@ -58,7 +58,8 @@ import type { ArrayPattern,
   TypeParameterInstantiation,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
-import { anyTypeAnnotation,
+import {
+  anyTypeAnnotation,
   arrayTypeAnnotation,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
@@ -81,6 +82,7 @@ import { anyTypeAnnotation,
   importDeclaration,
   interfaceDeclaration,
   interfaceExtends,
+  intersectionTypeAnnotation,
   mixedTypeAnnotation,
   nullLiteralTypeAnnotation,
   nullableTypeAnnotation,
@@ -108,7 +110,8 @@ import { anyTypeAnnotation,
   variableDeclaration,
   variableDeclarator,
   variance,
-  voidTypeAnnotation } from '@babel/types';
+  voidTypeAnnotation,
+} from "@babel/types";
 
 type TransformTypeFlags = {|
   readOnly?: boolean,
@@ -704,6 +707,9 @@ function transformTsType(
           ? voidTypeAnnotation()
           : transformTSTypeAnnotation(input.typeAnnotation, ctx),
       );
+    }
+    case 'TSIntersectionType': {
+      return intersectionTypeAnnotation(input.types.map(t => transformTsType(t, ctx)));
     }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
