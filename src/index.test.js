@@ -34,6 +34,7 @@ describe('interface', () => {
     ['flowgen/interfaces'],
     ['interface'],
     ['flowgen/string-literals'],
+    ['flowgen/variables'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });

@@ -1178,37 +1178,50 @@ function transformClassDeclaration(
   return t;
 }
 
-function transformVariableDeclaration(input: VariableDeclaration, ctx: TransformContext) {
-  if (input.declare === true) {
-    if (input.declarations.length !== 1) {
-      throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
-    }
-    const [declaration] = input.declarations;
-    if (declaration.id.type !== 'Identifier') {
-      throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
-    }
-    const id = declaration.id.typeAnnotation != null
-      ? declaration.id
-      : identifier(declaration.id.name);
-    const output = declareVariable(id);
-    if (declaration.init != null) {
-      id.typeAnnotation = typeAnnotation(
-        transformExpressionTypeElement(declaration.init),
-      );
-    }
-
-    return output;
+function transformVariableDeclaratorToDeclareVariable(
+  input: VariableDeclarator,
+  ctx: TransformContext,
+) {
+  if (input.id.type !== 'Identifier') {
+    throw new Error('transformVariableDeclaratorToDeclareVariable: declaration variable not supported');
+  }
+  const inputId = input.id;
+  const id = identifier(inputId.name);
+  const output = declareVariable(id);
+  if (inputId.typeAnnotation != null && inputId.typeAnnotation.type !== 'Noop') {
+    id.typeAnnotation = typeAnnotation(
+      transformTSTypeAnnotation(inputId.typeAnnotation, ctx),
+    );
+  } else if (input.init != null) {
+    id.typeAnnotation = typeAnnotation(
+      transformExpressionTypeElement(input.init),
+    );
   }
 
-  return variableDeclaration(
-    input.kind,
-    input.declarations.map(d => transformVariableDeclarator(d, ctx)),
-  );
+  return output;
 }
 
-function transformDeclaration(input: Declaration | null, ctx: TransformContext) {
+function transformVariableDeclaration(
+  input: VariableDeclaration, ctx: TransformContext,
+): Array<DeclareVariable | VariableDeclaration> {
+  if (input.declare === true) {
+    return input.declarations.map(d => transformVariableDeclaratorToDeclareVariable(d, ctx));
+  }
+
+  return [
+    variableDeclaration(
+      input.kind,
+      input.declarations.map(d => transformVariableDeclarator(d, ctx)),
+    ),
+  ];
+}
+
+function transformDeclaration(
+  input: Declaration | null,
+  ctx: TransformContext,
+): Array<DeclareVariable | VariableDeclaration> {
   if (input === null) {
-    return null;
+    return [];
   }
 
   switch (input.type) {
@@ -1216,30 +1229,32 @@ function transformDeclaration(input: Declaration | null, ctx: TransformContext) 
       return transformVariableDeclaration(input, ctx);
     default:
       console.log('[transformDeclaration]: not supported', input.type);
-      return null;
+      return [];
   }
 }
 
-function transformStatement(input: Statement, ctx: TransformContext): Statement | null {
+function transformStatement(input: Statement, ctx: TransformContext): $ReadOnlyArray<Statement> {
   switch (input.type) {
     case 'TSInterfaceDeclaration': {
       const output = transformInterfaceDeclaration(input, ctx);
       if (output != null) {
         ctx.interfaces[output.id.name] = output;
+        return [output];
       }
-      return output;
+      return [];
     }
     case 'TSTypeAliasDeclaration':
-      return transformTSTypeAliasDeclaration(input, ctx);
+      return [transformTSTypeAliasDeclaration(input, ctx)];
     case 'EmptyStatement':
-      return input;
+      return [input];
     case 'ClassDeclaration':
-      return transformClassDeclaration(input, ctx);
-    case 'VariableDeclaration':
+      return [transformClassDeclaration(input, ctx)];
+    case 'VariableDeclaration': {
       return transformVariableDeclaration(input, ctx);
+    }
     case 'ImportDeclaration': {
       if (input.importKind === 'type') {
-        return input;
+        return [input];
       }
 
       const output = importDeclaration(
@@ -1253,32 +1268,36 @@ function transformStatement(input: Statement, ctx: TransformContext): Statement 
         output.importKind = 'type';
       }
 
-      return output;
+      return [output];
     }
     case 'ExportNamedDeclaration': {
       if (input.specifiers.length > 0) {
         console.log('Unsupported ExportNamedDeclaration: has specifiers');
-        return emptyStatement();
+        return [emptyStatement()];
       }
 
-      const declaration = transformDeclaration(input.declaration, ctx);
+      const declarations = transformDeclaration(input.declaration, ctx);
 
-      if (declaration !== null && declaration.type === 'VariableDeclaration') {
-        console.log('Unsupported ExportNamedDeclaration: declaration is not declare');
-        return emptyStatement();
-      }
+      return declarations.map(
+        (declaration) => {
+          if (declaration !== null && declaration.type === 'VariableDeclaration') {
+            console.log('Unsupported ExportNamedDeclaration: declaration is not declare');
+            return emptyStatement();
+          }
 
-      return declareExportDeclaration(
-        declaration,
-        [],
-        input.source,
+          return declareExportDeclaration(
+            declaration,
+            [],
+            input.source,
+          );
+        },
       );
     }
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
       // eslint-disable-next-line no-unused-vars
       const n: empty = input.type;
-      return emptyStatement();
+      return [emptyStatement()];
     }
   }
 }
@@ -1291,10 +1310,7 @@ function transformProgram(input: Program): Program {
 
   return program(
     input.body.reduce((acc, s) => {
-      const output = transformStatement(s, ctx);
-      if (output != null) {
-        acc.push(output);
-      }
+      acc.push(...transformStatement(s, ctx));
       return acc;
     }, []),
   );
