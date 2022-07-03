@@ -8,10 +8,12 @@ import type { ArrayPattern,
   ClassBody,
   ClassDeclaration,
   ClassImplements,
+  Declaration,
   DeclareClass,
   DeclareInterface,
   DeclareVariable,
   Expression,
+  Flow,
   FlowType,
   FunctionTypeAnnotation,
   FunctionTypeParam,
@@ -54,6 +56,7 @@ import type { ArrayPattern,
   TypeParameter,
   TypeParameterDeclaration,
   TypeParameterInstantiation,
+  VariableDeclaration,
   VariableDeclarator } from '@babel/types';
 import { anyTypeAnnotation,
   arrayTypeAnnotation,
@@ -64,15 +67,18 @@ import { anyTypeAnnotation,
   classMethod,
   classProperty,
   declareClass,
+  declareExportDeclaration,
   declareInterface,
   declareVariable,
   emptyStatement,
   emptyTypeAnnotation,
+  exportNamedDeclaration,
   file,
   functionTypeAnnotation,
   functionTypeParam,
   genericTypeAnnotation,
   identifier,
+  importDeclaration,
   interfaceDeclaration,
   interfaceExtends,
   mixedTypeAnnotation,
@@ -686,6 +692,19 @@ function transformTsType(
           : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
       );
     }
+    case 'TSFunctionType': {
+      const [params, restParam] = transformFunctionParams(input.parameters, ctx);
+      return functionTypeAnnotation(
+        input.typeParameters == null
+          ? null
+          : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
+        params,
+        restParam,
+        input.typeAnnotation === null
+          ? voidTypeAnnotation()
+          : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+      );
+    }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
       // eslint-disable-next-line no-unused-vars
@@ -833,6 +852,25 @@ function transformExpression<E: Expression>(input: E): E {
       // eslint-disable-next-line no-unused-vars
       const n: empty = input.type;
       return input;
+    }
+  }
+}
+
+function transformExpressionTypeElement(input: Expression): FlowType {
+  switch (input.type) {
+    case 'BooleanLiteral':
+      return transformTSLiteralTypeElement(input);
+    case 'StringLiteral':
+      return transformTSLiteralTypeElement(input);
+    case 'NumericLiteral':
+      return transformTSLiteralTypeElement(input);
+    case 'UnaryExpression':
+      return transformTSLiteralTypeElement(input);
+    default: {
+      console.log(`transformExpressionTypeElement: not supported ${input.type}`, input);
+      // eslint-disable-next-line no-unused-vars
+      const n: empty = input.type;
+      return anyTypeAnnotation();
     }
   }
 }
@@ -1140,6 +1178,48 @@ function transformClassDeclaration(
   return t;
 }
 
+function transformVariableDeclaration(input: VariableDeclaration, ctx: TransformContext) {
+  if (input.declare === true) {
+    if (input.declarations.length !== 1) {
+      throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
+    }
+    const [declaration] = input.declarations;
+    if (declaration.id.type !== 'Identifier') {
+      throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
+    }
+    const id = declaration.id.typeAnnotation != null
+      ? declaration.id
+      : identifier(declaration.id.name);
+    const output = declareVariable(id);
+    if (declaration.init != null) {
+      id.typeAnnotation = typeAnnotation(
+        transformExpressionTypeElement(declaration.init),
+      );
+    }
+
+    return output;
+  }
+
+  return variableDeclaration(
+    input.kind,
+    input.declarations.map(d => transformVariableDeclarator(d, ctx)),
+  );
+}
+
+function transformDeclaration(input: Declaration | null, ctx: TransformContext) {
+  if (input === null) {
+    return null;
+  }
+
+  switch (input.type) {
+    case 'VariableDeclaration':
+      return transformVariableDeclaration(input, ctx);
+    default:
+      console.log('[transformDeclaration]: not supported', input.type);
+      return null;
+  }
+}
+
 function transformStatement(input: Statement, ctx: TransformContext): Statement | null {
   switch (input.type) {
     case 'TSInterfaceDeclaration': {
@@ -1155,24 +1235,43 @@ function transformStatement(input: Statement, ctx: TransformContext): Statement 
       return input;
     case 'ClassDeclaration':
       return transformClassDeclaration(input, ctx);
-    case 'VariableDeclaration': {
-      if (input.declare === true) {
-        if (input.declarations.length !== 1) {
-          throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
-        }
-        const [declaration] = input.declarations;
-        if (declaration.id.type !== 'Identifier') {
-          throw new Error('transformStatement/VariableDeclaration: declaration variable not supported');
-        }
-        const output = declareVariable(
-          declaration.id,
-        );
-        ctx.variables[output.id.name] = output;
-        return output;
+    case 'VariableDeclaration':
+      return transformVariableDeclaration(input, ctx);
+    case 'ImportDeclaration': {
+      if (input.importKind === 'type') {
+        return input;
       }
-      return variableDeclaration(
-        input.kind,
-        input.declarations.map(d => transformVariableDeclarator(d, ctx)),
+
+      const output = importDeclaration(
+        input.specifiers,
+        input.source,
+      );
+
+      if (output.specifiers.some(s => s.type === 'ImportNamespaceSpecifier')) {
+        output.importKind = 'typeof';
+      } else {
+        output.importKind = 'type';
+      }
+
+      return output;
+    }
+    case 'ExportNamedDeclaration': {
+      if (input.specifiers.length > 0) {
+        console.log('Unsupported ExportNamedDeclaration: has specifiers');
+        return emptyStatement();
+      }
+
+      const declaration = transformDeclaration(input.declaration, ctx);
+
+      if (declaration !== null && declaration.type === 'VariableDeclaration') {
+        console.log('Unsupported ExportNamedDeclaration: declaration is not declare');
+        return emptyStatement();
+      }
+
+      return declareExportDeclaration(
+        declaration,
+        [],
+        input.source,
       );
     }
     default: {
@@ -1202,7 +1301,7 @@ function transformProgram(input: Program): Program {
 }
 
 export function tsToFlow(input: string): string {
-  const typescriptAst = parse(input, { plugins: ['typescript'], tokens: true });
+  const typescriptAst = parse(input, { plugins: ['typescript'], tokens: true, sourceType: 'module' });
 
   const flowAst = file(
     transformProgram(typescriptAst.program),

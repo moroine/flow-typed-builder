@@ -7,11 +7,7 @@ async function readFile(path) {
   return new Promise((resolve, reject) => {
     fs.readFile(path, 'utf8', (err, content) => {
       if (err) {
-        if (err.code === 'ENOENT') {
-          resolve('');
-        } else {
-          reject(err);
-        }
+        reject(err);
       } else { resolve(content); }
     });
   });
@@ -37,6 +33,7 @@ describe('interface', () => {
     ['flowgen/computed'],
     ['flowgen/interfaces'],
     ['interface'],
+    ['flowgen/string-literals'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });
