@@ -11,6 +11,7 @@ import type { ArrayPattern,
   Declaration,
   DeclareClass,
   DeclareInterface,
+  DeclareTypeAlias,
   DeclareVariable,
   ExportNamespaceSpecifier,
   ExportSpecifier,
@@ -18,6 +19,7 @@ import type { ArrayPattern,
   FlowType,
   FunctionTypeAnnotation,
   FunctionTypeParam,
+  GenericTypeAnnotation,
   Identifier,
   InterfaceDeclaration,
   InterfaceExtends,
@@ -70,6 +72,7 @@ import { anyTypeAnnotation,
   declareClass,
   declareExportDeclaration,
   declareInterface,
+  declareTypeAlias,
   declareVariable,
   emptyStatement,
   emptyTypeAnnotation,
@@ -821,7 +824,17 @@ function transformTSTypeParameterDeclaration(
 function transformTSTypeAliasDeclaration(
   input: TSTypeAliasDeclaration,
   ctx: TransformContext,
-): TypeAlias {
+): DeclareTypeAlias | TypeAlias {
+  if (input.declare === true) {
+    return declareTypeAlias(
+      input.id,
+      input.typeParameters == null
+        ? null
+        : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
+      transformTsType(input.typeAnnotation, ctx),
+    );
+  }
+
   return typeAlias(
     input.id,
     input.typeParameters == null
@@ -1017,6 +1030,7 @@ function transformClassMethod(
 function transformClassDeclarationBody(
   input: ClassBody['body'][number],
   ctx: TransformContext,
+  classIdentifier: GenericTypeAnnotation,
 ): ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty | null {
   switch (input.type) {
     case 'ClassMethod': {
@@ -1131,6 +1145,25 @@ function transformClassDeclarationBody(
         : anyTypeAnnotation();
       const [params, restParam] = transformFunctionParams(input.params, ctx);
 
+      if (input.kind === 'constructor') {
+        const construct = objectTypeProperty(
+          identifier('constructor'),
+          functionTypeAnnotation(
+            input.typeParameters != null
+                  && input.typeParameters.type === 'TSTypeParameterDeclaration'
+              ? transformTSTypeParameterDeclaration(input.typeParameters, ctx)
+              : null,
+            params,
+            restParam,
+            classIdentifier,
+          ),
+        );
+        construct.kind = 'init';
+        construct.method = true;
+
+        return construct;
+      }
+
       const value = input.kind === 'get'
         ? returnType
         : functionTypeAnnotation(
@@ -1142,10 +1175,6 @@ function transformClassDeclarationBody(
           restParam,
           returnType,
         );
-
-      if (input.kind === 'constructor') {
-        return objectTypeCallProperty(value);
-      }
 
       if (
         input.key.type !== 'Identifier'
@@ -1229,8 +1258,20 @@ function transformClassDeclaration(
     : null;
 
   if (isDeclare) {
+    const classIdentifier = genericTypeAnnotation(
+      input.id,
+      input.typeParameters == null || input.typeParameters.type === 'Noop'
+        ? null
+        : typeParameterInstantiation(
+          input.typeParameters.params.map(
+            param => genericTypeAnnotation(
+              identifier(param.name),
+            ),
+          ),
+        ),
+    );
     const [props, indexers, calls] = input.body.body
-      .map(s => transformClassDeclarationBody(s, ctx))
+      .map(s => transformClassDeclarationBody(s, ctx, classIdentifier))
       .reduce(
         (acc, s) => {
           if (s != null) {
@@ -1327,7 +1368,7 @@ function transformVariableDeclaratorToDeclareVariable(
 function transformVariableDeclaration(
   input: VariableDeclaration,
   ctx: TransformContext,
-): Array<DeclareVariable | VariableDeclaration> {
+): $ReadOnlyArray<DeclareVariable | VariableDeclaration> {
   if (input.declare === true) {
     return input.declarations.map(d => transformVariableDeclaratorToDeclareVariable(d, ctx));
   }
@@ -1343,7 +1384,9 @@ function transformVariableDeclaration(
 function transformDeclaration(
   input: Declaration | null,
   ctx: TransformContext,
-): Array<DeclareVariable | VariableDeclaration> {
+): $ReadOnlyArray<
+  DeclareClass | DeclareTypeAlias | DeclareVariable | TypeAlias | VariableDeclaration
+> {
   if (input === null) {
     return [];
   }
@@ -1351,6 +1394,16 @@ function transformDeclaration(
   switch (input.type) {
     case 'VariableDeclaration':
       return transformVariableDeclaration(input, ctx);
+    case 'ClassDeclaration': {
+      const output = transformClassDeclaration(input, ctx);
+      if (output.type === 'DeclareClass') {
+        return [output];
+      }
+      console.log('transformDeclaration/ClassDeclaration: not expected');
+      return [];
+    }
+    case 'TSTypeAliasDeclaration':
+      return [transformTSTypeAliasDeclaration(input, ctx)];
     default:
       console.log('[transformDeclaration]: not supported', input.type);
       return [];
@@ -1447,7 +1500,7 @@ function transformStatement(
 
       const declarations = transformDeclaration(input.declaration, ctx);
 
-      return declarations.map((declaration) => {
+      return declarations.flatMap((declaration) => {
         if (
           declaration !== null
           && declaration.type === 'VariableDeclaration'
@@ -1458,7 +1511,41 @@ function transformStatement(
           return emptyStatement();
         }
 
-        return declareExportDeclaration(declaration, [], input.source);
+        if (declaration !== null && declaration.type === 'DeclareClass') {
+          return [
+            declaration,
+            exportNamedDeclaration(
+              null,
+              [
+                exportSpecifier(
+                  declaration.id,
+                  declaration.id,
+                ),
+              ],
+              input.source,
+            ),
+          ];
+        }
+
+        if (declaration !== null && declaration.type === 'DeclareTypeAlias') {
+          const exportStatement = exportNamedDeclaration(
+            null,
+            [
+              exportSpecifier(
+                declaration.id,
+                declaration.id,
+              ),
+            ],
+            input.source,
+          );
+          exportStatement.exportKind = 'type';
+          return [
+            declaration,
+            exportStatement,
+          ];
+        }
+
+        return [declareExportDeclaration(declaration, [], input.source)];
       });
     }
     case 'ExportDefaultDeclaration': {

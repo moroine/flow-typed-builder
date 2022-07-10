@@ -31,10 +31,12 @@ describe('interface', () => {
     ['flowgen/boolean-literals'],
     ['flowgen/classes'],
     ['flowgen/computed'],
+    ['flowgen/declaration-file'],
     ['flowgen/exports'],
     ['flowgen/interfaces'],
     ['flowgen/string-literals'],
     ['flowgen/variables'],
+    ['declare'],
     ['interface'],
     ['intersection'],
   ])('should transform %s', async (name) => {
