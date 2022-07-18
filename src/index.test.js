@@ -41,8 +41,16 @@ describe('interface', () => {
     ['declare'],
     ['interface'],
     ['intersection'],
-    // ['mongo'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });
+});
+
+test('should mongo %s', async () => {
+  const input = await readFile(`${__dirname}/tests/fixtures/mongo/input.ts`);
+  const output = tsToFlow(input);
+
+  expect(output).toMatchSnapshot();
+  // $FlowExpectedError[incompatible-call]
+  expect(output).toBeValidFlowTypeDeclarations();
 });

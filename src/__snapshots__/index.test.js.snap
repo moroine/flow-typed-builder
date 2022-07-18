@@ -1,4 +1,7 @@
-/// <reference types="node" />
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should mongo %s 1`] = `
+"/// <reference types=\\"node\\" />
 import type { Binary } from 'bson';
 import type { BSONRegExp } from 'bson';
 import type { BSONSymbol } from 'bson';
@@ -58,7 +61,7 @@ declare class AbstractCursor<TSchema = any, CursorEvents: AbstractCursorEvents =
   /* Excluded from this release type: [kOptions] */
 
   /** @event */
-  static +CLOSE: "close"
+  static +CLOSE: \\"close\\"
   /* Excluded from this release type: __constructor */
   ,
   +id: Long | void
@@ -618,14 +621,14 @@ declare export declare interface Auth {
 /** @public */
 
 declare export var AuthMechanism: Readonly<{
-  +MONGODB_AWS: "MONGODB-AWS",
-  +MONGODB_CR: "MONGODB-CR",
-  +MONGODB_DEFAULT: "DEFAULT",
-  +MONGODB_GSSAPI: "GSSAPI",
-  +MONGODB_PLAIN: "PLAIN",
-  +MONGODB_SCRAM_SHA1: "SCRAM-SHA-1",
-  +MONGODB_SCRAM_SHA256: "SCRAM-SHA-256",
-  +MONGODB_X509: "MONGODB-X509",
+  +MONGODB_AWS: \\"MONGODB-AWS\\",
+  +MONGODB_CR: \\"MONGODB-CR\\",
+  +MONGODB_DEFAULT: \\"DEFAULT\\",
+  +MONGODB_GSSAPI: \\"GSSAPI\\",
+  +MONGODB_PLAIN: \\"PLAIN\\",
+  +MONGODB_SCRAM_SHA1: \\"SCRAM-SHA-1\\",
+  +MONGODB_SCRAM_SHA256: \\"SCRAM-SHA-256\\",
+  +MONGODB_X509: \\"MONGODB-X509\\",
   ...
 }>;
 /** @public */
@@ -723,10 +726,10 @@ declare export declare interface AutoEncryptionOptions {
       ,
       clientSecret: string
       /**
-       * If present, a host with optional port. E.g. "example.com" or "example.com:443".
+       * If present, a host with optional port. E.g. \\"example.com\\" or \\"example.com:443\\".
        * This is optional, and only needed if customer is using a non-commercial Azure instance
        * (e.g. a government or China account, which use different URLs).
-       * Defaults to "login.microsoftonline.com"
+       * Defaults to \\"login.microsoftonline.com\\"
        */
       ,
       identityPlatformEndpoint?: string | void,
@@ -741,8 +744,8 @@ declare export declare interface AutoEncryptionOptions {
       ,
       privateKey: string | Buffer
       /**
-       * If present, a host with optional port. E.g. "example.com" or "example.com:443".
-       * Defaults to "oauth2.googleapis.com"
+       * If present, a host with optional port. E.g. \\"example.com\\" or \\"example.com:443\\".
+       * Defaults to \\"oauth2.googleapis.com\\"
        */
       ,
       endpoint?: string | void,
@@ -756,7 +759,7 @@ declare export declare interface AutoEncryptionOptions {
       /**
        * The output endpoint string.
        * The endpoint consists of a hostname and port separated by a colon.
-       * E.g. "example.com:123". A port is always present.
+       * E.g. \\"example.com:123\\". A port is always present.
        */
       endpoint?: string,
       ...
@@ -790,7 +793,7 @@ declare export declare interface AutoEncryptionOptions {
   extraOptions?: {
     /**
      * A local process the driver communicates with to determine how to encrypt values in a command.
-     * Defaults to "mongodb://%2Fvar%2Fmongocryptd.sock" if domain sockets are available or "mongodb://localhost:27020" otherwise
+     * Defaults to \\"mongodb://%2Fvar%2Fmongocryptd.sock\\" if domain sockets are available or \\"mongodb://localhost:27020\\" otherwise
      */
     mongocryptdURI?: string
     /** If true, autoEncryption will not attempt to spawn a mongocryptd before connecting  */
@@ -1214,16 +1217,16 @@ declare class ChangeStream<TSchema: Document = Document, TChange: Document = Cha
 
   /** @event */
   ,
-  static +RESPONSE: "response"
+  static +RESPONSE: \\"response\\"
   /** @event */
   ,
-  static +MORE: "more"
+  static +MORE: \\"more\\"
   /** @event */
   ,
-  static +INIT: "init"
+  static +INIT: \\"init\\"
   /** @event */
   ,
-  static +CLOSE: "close"
+  static +CLOSE: \\"close\\"
   /**
    * Fired for each new matching change in the specified namespace. Attaching a \`change\`
    * event listener to a Change Stream will switch the stream into flowing mode. Data will
@@ -1231,19 +1234,19 @@ declare class ChangeStream<TSchema: Document = Document, TChange: Document = Cha
    * @event
    */
   ,
-  static +CHANGE: "change"
+  static +CHANGE: \\"change\\"
   /** @event */
   ,
-  static +END: "end"
+  static +END: \\"end\\"
   /** @event */
   ,
-  static +ERROR: "error"
+  static +ERROR: \\"error\\"
   /**
    * Emitted each time the change stream stores a new resume token.
    * @event
    */
   ,
-  static +RESUME_TOKEN_CHANGED: "resumeTokenChanged"
+  static +RESUME_TOKEN_CHANGED: \\"resumeTokenChanged\\"
   /* Excluded from this release type: __constructor */
 
   /* Excluded from this release type: cursorStream */
@@ -1311,7 +1314,7 @@ export { ChangeStream };
 
 declare export declare interface ChangeStreamCollModDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "modify"
+  operationType: \\"modify\\"
 }
 /**
  * @public
@@ -1320,7 +1323,7 @@ declare export declare interface ChangeStreamCollModDocument extends ChangeStrea
 
 declare export declare interface ChangeStreamCreateDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "create"
+  operationType: \\"create\\"
 }
 /**
  * Only present when the \`showExpandedEvents\` flag is enabled.
@@ -1330,7 +1333,7 @@ declare export declare interface ChangeStreamCreateDocument extends ChangeStream
 
 declare export declare interface ChangeStreamCreateIndexDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID, ChangeStreamDocumentOperationDescription {
   /** Describes the type of operation represented in this change notification */
-  operationType: "createIndexes"
+  operationType: \\"createIndexes\\"
 }
 /* Excluded from this release type: ChangeStreamCursor */
 
@@ -1343,7 +1346,7 @@ declare export declare interface ChangeStreamCreateIndexDocument extends ChangeS
 
 declare export declare interface ChangeStreamDeleteDocument<TSchema: Document = Document> extends ChangeStreamDocumentCommon, ChangeStreamDocumentKey, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "delete"
+  operationType: \\"delete\\"
   /** Namespace the delete event occured on */
   ,
   ns: ChangeStreamNameSpace
@@ -1441,7 +1444,7 @@ declare export declare interface ChangeStreamDocumentOperationDescription {
 
 declare export declare interface ChangeStreamDropDatabaseDocument extends ChangeStreamDocumentCommon {
   /** Describes the type of operation represented in this change notification */
-  operationType: "dropDatabase"
+  operationType: \\"dropDatabase\\"
   /** The database dropped */
   ,
   ns: {
@@ -1456,7 +1459,7 @@ declare export declare interface ChangeStreamDropDatabaseDocument extends Change
 
 declare export declare interface ChangeStreamDropDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "drop"
+  operationType: \\"drop\\"
   /** Namespace the drop event occured on */
   ,
   ns: ChangeStreamNameSpace,
@@ -1469,7 +1472,7 @@ declare export declare interface ChangeStreamDropDocument extends ChangeStreamDo
 
 declare export declare interface ChangeStreamDropIndexDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID, ChangeStreamDocumentOperationDescription {
   /** Describes the type of operation represented in this change notification */
-  operationType: "dropIndexes"
+  operationType: \\"dropIndexes\\"
 }
 /** @public */
 
@@ -1491,7 +1494,7 @@ export type { ChangeStreamEvents
 };
 declare export declare interface ChangeStreamInsertDocument<TSchema: Document = Document> extends ChangeStreamDocumentCommon, ChangeStreamDocumentKey, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "insert"
+  operationType: \\"insert\\"
   /** This key will contain the document being inserted */
   ,
   fullDocument: TSchema
@@ -1506,7 +1509,7 @@ declare export declare interface ChangeStreamInsertDocument<TSchema: Document = 
 
 declare export declare interface ChangeStreamInvalidateDocument extends ChangeStreamDocumentCommon {
   /** Describes the type of operation represented in this change notification */
-  operationType: "invalidate"
+  operationType: \\"invalidate\\"
 }
 /** @public */
 
@@ -1595,7 +1598,7 @@ declare export declare interface ChangeStreamOptions extends AggregateOptions {
 
 declare export declare interface ChangeStreamRefineCollectionShardKeyDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID, ChangeStreamDocumentOperationDescription {
   /** Describes the type of operation represented in this change notification */
-  operationType: "refineCollectionShardKey"
+  operationType: \\"refineCollectionShardKey\\"
 }
 /**
  * @public
@@ -1604,7 +1607,7 @@ declare export declare interface ChangeStreamRefineCollectionShardKeyDocument ex
 
 declare export declare interface ChangeStreamRenameDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "rename"
+  operationType: \\"rename\\"
   /** The new name for the \`ns.coll\` collection */
   ,
   to: {
@@ -1612,7 +1615,7 @@ declare export declare interface ChangeStreamRenameDocument extends ChangeStream
     coll: string,
     ...
   }
-  /** The "from" namespace that the rename occured on */
+  /** The \\"from\\" namespace that the rename occured on */
   ,
   ns: ChangeStreamNameSpace,
 }
@@ -1623,7 +1626,7 @@ declare export declare interface ChangeStreamRenameDocument extends ChangeStream
 
 declare export declare interface ChangeStreamReplaceDocument<TSchema: Document = Document> extends ChangeStreamDocumentCommon, ChangeStreamDocumentKey {
   /** Describes the type of operation represented in this change notification */
-  operationType: "replace"
+  operationType: \\"replace\\"
   /** The fullDocument of a replace event represents the document after the insert of the replacement document */
   ,
   fullDocument: TSchema
@@ -1647,7 +1650,7 @@ declare export declare interface ChangeStreamReplaceDocument<TSchema: Document =
 
 declare export declare interface ChangeStreamReshardCollectionDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID, ChangeStreamDocumentOperationDescription {
   /** Describes the type of operation represented in this change notification */
-  operationType: "reshardCollection"
+  operationType: \\"reshardCollection\\"
 }
 /**
  * @public
@@ -1656,7 +1659,7 @@ declare export declare interface ChangeStreamReshardCollectionDocument extends C
 
 declare export declare interface ChangeStreamShardCollectionDocument extends ChangeStreamDocumentCommon, ChangeStreamDocumentCollectionUUID, ChangeStreamDocumentOperationDescription {
   /** Describes the type of operation represented in this change notification */
-  operationType: "shardCollection"
+  operationType: \\"shardCollection\\"
 }
 /**
  * @public
@@ -1665,7 +1668,7 @@ declare export declare interface ChangeStreamShardCollectionDocument extends Cha
 
 declare export declare interface ChangeStreamUpdateDocument<TSchema: Document = Document> extends ChangeStreamDocumentCommon, ChangeStreamDocumentKey, ChangeStreamDocumentCollectionUUID {
   /** Describes the type of operation represented in this change notification */
-  operationType: "update"
+  operationType: \\"update\\"
   /**
    * This is only set if \`fullDocument\` is set to \`'updateLookup'\`
    * Contains the point-in-time post-image of the modified document if the
@@ -2048,7 +2051,7 @@ declare class Collection<TSchema: Document = Document> {
    *
    *  { updateMany: { filter: {a:2}, update: {$set: {a:2}}, upsert:true } }
    *
-   *  { updateMany: { filter: {}, update: {$set: {"a.$[i].x": 5}}, arrayFilters: [{ "i.x": 5 }]} }
+   *  { updateMany: { filter: {}, update: {$set: {\\"a.$[i].x\\": 5}}, arrayFilters: [{ \\"i.x\\": 5 }]} }
    *
    *  { deleteOne: { filter: {c:1} } }
    *
@@ -2798,7 +2801,7 @@ declare class CommandSucceededEvent {
 export { CommandSucceededEvent };
 /** @public */
 
-declare type CommonEvents = "newListener" | "removeListener";
+declare type CommonEvents = \\"newListener\\" | \\"removeListener\\";
 export type { CommonEvents
 /** @public */
 };
@@ -2831,7 +2834,7 @@ export type { Condition
 };
 declare class ConnectionCheckedInEvent {
   /** The id of the connection */
-  connectionId: number | "<monitor>"
+  connectionId: number | \\"<monitor>\\"
   /* Excluded from this release type: __constructor */
 
 }
@@ -2844,7 +2847,7 @@ export { ConnectionCheckedInEvent };
 
 declare class ConnectionCheckedOutEvent {
   /** The id of the connection */
-  connectionId: number | "<monitor>"
+  connectionId: number | \\"<monitor>\\"
   /* Excluded from this release type: __constructor */
 
 }
@@ -2878,7 +2881,7 @@ export { ConnectionCheckOutStartedEvent };
 
 declare class ConnectionClosedEvent {
   /** The id of the connection */
-  connectionId: number | "<monitor>"
+  connectionId: number | \\"<monitor>\\"
   /** The reason the connection was closed */
   ,
   reason: string,
@@ -2895,7 +2898,7 @@ export { ConnectionClosedEvent };
 
 declare class ConnectionCreatedEvent {
   /** A monotonically increasing, per-pool id for the newly created connection */
-  connectionId: number | "<monitor>"
+  connectionId: number | \\"<monitor>\\"
   /* Excluded from this release type: __constructor */
 
 }
@@ -2917,7 +2920,7 @@ export type { ConnectionEvents
 /** @public */
 };
 declare export declare interface ConnectionOptions extends SupportedNodeConnectionOptions, StreamDescriptionOptions, ProxyOptions {
-  id: number | "<monitor>",
+  id: number | \\"<monitor>\\",
   generation: number,
   hostAddress: HostAddress,
   autoEncrypter?: AutoEncrypter,
@@ -2980,7 +2983,7 @@ declare type ConnectionPoolEvents = {
   connectionCheckedOut(event: ConnectionCheckedOutEvent): void,
   connectionCheckedIn(event: ConnectionCheckedInEvent): void,
   ...
-} & Omit<ConnectionEvents, "close" | "message">;
+} & Omit<ConnectionEvents, \\"close\\" | \\"message\\">;
 export type { ConnectionPoolEvents
 /* Excluded from this release type: ConnectionPoolMetrics */
 
@@ -3029,7 +3032,7 @@ declare export declare interface ConnectionPoolOptions extends Omit {
 
 declare class ConnectionReadyEvent {
   /** The id of the connection */
-  connectionId: number | "<monitor>"
+  connectionId: number | \\"<monitor>\\"
   /* Excluded from this release type: __constructor */
 
 }
@@ -3152,7 +3155,7 @@ declare export declare interface CreateIndexesOptions extends CommandOperationOp
   /** Allows users to configure the storage engine on a per-index basis when creating an index. (MongoDB 3.0 or higher) */
   ,
   storageEngine?: Document
-  /** (MongoDB 4.4. or higher) Specifies how many data-bearing members of a replica set, including the primary, must complete the index builds successfully before the primary marks the indexes as ready. This option accepts the same values for the "w" field in a write concern plus "votingMembers", which indicates all voting data-bearing nodes. */
+  /** (MongoDB 4.4. or higher) Specifies how many data-bearing members of a replica set, including the primary, must complete the index builds successfully before the primary marks the indexes as ready. This option accepts the same values for the \\"w\\" field in a write concern plus \\"votingMembers\\", which indicates all voting data-bearing nodes. */
   ,
   commitQuorum?: number | string
   /** Specifies the index version number, either 0 or 1. */
@@ -3178,7 +3181,7 @@ declare export declare interface CreateIndexesOptions extends CommandOperationOp
 }
 /** @public */
 
-declare export var CURSOR_FLAGS: ["tailable", "oplogReplay", "noCursorTimeout", "awaitData", "exhaust", "partial"];
+declare export var CURSOR_FLAGS: [\\"tailable\\", \\"oplogReplay\\", \\"noCursorTimeout\\", \\"awaitData\\", \\"exhaust\\", \\"partial\\"];
 /** @public
  * @deprecated This interface is deprecated */
 
@@ -3322,15 +3325,15 @@ declare class Db {
    * @param options - Optional settings for the command
    */
   ,
-  listCollections(filter: Document, options: Exclude<ListCollectionsOptions, "nameOnly"> & {
+  listCollections(filter: Document, options: Exclude<ListCollectionsOptions, \\"nameOnly\\"> & {
     nameOnly: true,
     ...
-  }): ListCollectionsCursor<Pick<CollectionInfo, "name" | "type">>,
-  listCollections(filter: Document, options: Exclude<ListCollectionsOptions, "nameOnly"> & {
+  }): ListCollectionsCursor<Pick<CollectionInfo, \\"name\\" | \\"type\\">>,
+  listCollections(filter: Document, options: Exclude<ListCollectionsOptions, \\"nameOnly\\"> & {
     nameOnly: false,
     ...
   }): ListCollectionsCursor<CollectionInfo>,
-  listCollections<T: Pick<CollectionInfo, "name" | "type"> | CollectionInfo = Pick<CollectionInfo, "name" | "type"> | CollectionInfo>(filter?: Document, options?: ListCollectionsOptions): ListCollectionsCursor<T>
+  listCollections<T: Pick<CollectionInfo, \\"name\\" | \\"type\\"> | CollectionInfo = Pick<CollectionInfo, \\"name\\" | \\"type\\"> | CollectionInfo>(filter?: Document, options?: ListCollectionsOptions): ListCollectionsCursor<T>
   /**
    * Rename a collection.
    *
@@ -3632,7 +3635,7 @@ declare export declare interface EndSessionOptions {
   force?: boolean,
   forceClear?: boolean,
 }
-/** TypeScript Omit (Exclude to be specific) does not work for objects with an "any" indexed type, and breaks discriminated unions @public */
+/** TypeScript Omit (Exclude to be specific) does not work for objects with an \\"any\\" indexed type, and breaks discriminated unions @public */
 
 declare type EnhancedOmit<TRecordOrUnion, KeyUnion> = any;
 export type { EnhancedOmit
@@ -3684,10 +3687,10 @@ declare export declare interface ExplainOptions {
 /** @public */
 
 declare export var ExplainVerbosity: Readonly<{
-  +queryPlanner: "queryPlanner",
-  +queryPlannerExtended: "queryPlannerExtended",
-  +executionStats: "executionStats",
-  +allPlansExecution: "allPlansExecution",
+  +queryPlanner: \\"queryPlanner\\",
+  +queryPlannerExtended: \\"queryPlannerExtended\\",
+  +executionStats: \\"executionStats\\",
+  +allPlansExecution: \\"allPlansExecution\\",
   ...
 }>;
 /** @public */
@@ -3695,9 +3698,9 @@ declare export var ExplainVerbosity: Readonly<{
 declare type ExplainVerbosity = string;
 export type { ExplainVerbosity
 /**
- * For backwards compatibility, true is interpreted as "allPlansExecution"
- * and false as "queryPlanner". Prior to server version 3.6, aggregate()
- * ignores the verbosity parameter and executes in "queryPlanner".
+ * For backwards compatibility, true is interpreted as \\"allPlansExecution\\"
+ * and false as \\"queryPlanner\\". Prior to server version 3.6, aggregate()
+ * ignores the verbosity parameter and executes in \\"queryPlanner\\".
  * @public
  */
 };
@@ -4142,7 +4145,7 @@ declare class GridFSBucket {
    * necessary indexes.
    * @event
    */
-  static +INDEX: "index",
+  static +INDEX: \\"index\\",
   constructor(db: Db, options?: GridFSBucketOptions): GridFSBucket
   /**
    * Returns a writable stream (GridFSBucketWriteStream) for writing
@@ -4237,31 +4240,31 @@ declare class GridFSBucketReadStream mixins NodeJS.ReadableStream {
    * An error occurred
    * @event
    */
-  static +ERROR: "error"
+  static +ERROR: \\"error\\"
   /**
    * Fires when the stream loaded the file document corresponding to the provided id.
    * @event
    */
   ,
-  static +FILE: "file"
+  static +FILE: \\"file\\"
   /**
    * Emitted when a chunk of data is available to be consumed.
    * @event
    */
   ,
-  static +DATA: "data"
+  static +DATA: \\"data\\"
   /**
    * Fired when the stream is exhausted (no more data events).
    * @event
    */
   ,
-  static +END: "end"
+  static +END: \\"end\\"
   /**
    * Fired when the stream is exhausted and the underlying cursor is killed
    * @event
    */
   ,
-  static +CLOSE: "close"
+  static +CLOSE: \\"close\\"
   /* Excluded from this release type: __constructor */
 
   /* Excluded from this release type: _read */
@@ -4442,9 +4445,9 @@ declare export declare interface GridFSFile {
 declare export var GSSAPICanonicalizationValue: Readonly<{
   +on: true,
   +off: false,
-  +none: "none",
-  +forward: "forward",
-  +forwardAndReverse: "forwardAndReverse",
+  +none: \\"none\\",
+  +forward: \\"forward\\",
+  +forwardAndReverse: \\"forwardAndReverse\\",
   ...
 }>;
 /** @public */
@@ -4489,7 +4492,7 @@ declare export declare interface IndexDescription extends Pick {
 }
 /** @public */
 
-declare type IndexDirection = -1 | 1 | "2d" | "2dsphere" | "text" | "geoHaystack" | number;
+declare type IndexDirection = -1 | 1 | \\"2d\\" | \\"2dsphere\\" | \\"text\\" | \\"geoHaystack\\" | number;
 export type { IndexDirection
 /** @public */
 };
@@ -4718,13 +4721,13 @@ export type { KeysOfOtherType
 
 /** @public */
 };
-declare export var LEGAL_TCP_SOCKET_OPTIONS: ["family", "hints", "localAddress", "localPort", "lookup"];
+declare export var LEGAL_TCP_SOCKET_OPTIONS: [\\"family\\", \\"hints\\", \\"localAddress\\", \\"localPort\\", \\"lookup\\"];
 /** @public */
 
-declare export var LEGAL_TLS_SOCKET_OPTIONS: ["ALPNProtocols", "ca", "cert", "checkServerIdentity", "ciphers", "crl", "ecdhCurve", "key", "minDHSize", "passphrase", "pfx", "rejectUnauthorized", "secureContext", "secureProtocol", "servername", "session"];
+declare export var LEGAL_TLS_SOCKET_OPTIONS: [\\"ALPNProtocols\\", \\"ca\\", \\"cert\\", \\"checkServerIdentity\\", \\"ciphers\\", \\"crl\\", \\"ecdhCurve\\", \\"key\\", \\"minDHSize\\", \\"passphrase\\", \\"pfx\\", \\"rejectUnauthorized\\", \\"secureContext\\", \\"secureProtocol\\", \\"servername\\", \\"session\\"];
 /** @public */
 
-declare class ListCollectionsCursor<T: Pick<CollectionInfo, "name" | "type"> | CollectionInfo = Pick<CollectionInfo, "name" | "type"> | CollectionInfo> {
+declare class ListCollectionsCursor<T: Pick<CollectionInfo, \\"name\\" | \\"type\\"> | CollectionInfo = Pick<CollectionInfo, \\"name\\" | \\"type\\"> | CollectionInfo> {
   parent: Db,
   filter: Document,
   options?: ListCollectionsOptions,
@@ -4878,14 +4881,14 @@ export type { LoggerFunction
 /** @public */
 };
 declare export var LoggerLevel: Readonly<{
-  +ERROR: "error",
-  +WARN: "warn",
-  +INFO: "info",
-  +DEBUG: "debug",
-  +error: "error",
-  +warn: "warn",
-  +info: "info",
-  +debug: "debug",
+  +ERROR: \\"error\\",
+  +WARN: \\"warn\\",
+  +INFO: \\"info\\",
+  +DEBUG: \\"debug\\",
+  +error: \\"error\\",
+  +warn: \\"warn\\",
+  +info: \\"info\\",
+  +debug: \\"debug\\",
   ...
 }>;
 /** @public */
@@ -4908,7 +4911,7 @@ export type { MapFunction
 };
 declare export declare interface MapReduceOptions<TKey = ObjectId, TValue = Document> extends CommandOperationOptions {
   /** Sets the output target for the map reduce job. */
-  out?: "inline" | {
+  out?: \\"inline\\" | {
     inline: 1,
     ...
   } | {
@@ -4970,7 +4973,7 @@ declare export declare interface ModifyResult<TSchema = Document> {
 }
 /** @public */
 
-declare export var MONGO_CLIENT_EVENTS: ["connectionPoolCreated", "connectionPoolClosed", "connectionCreated", "connectionReady", "connectionClosed", "connectionCheckOutStarted", "connectionCheckOutFailed", "connectionCheckedOut", "connectionCheckedIn", "connectionPoolCleared", "commandStarted", "commandSucceeded", "commandFailed", "serverOpening", "serverClosed", "serverDescriptionChanged", "topologyOpening", "topologyClosed", "topologyDescriptionChanged", "error", "timeout", "close", "serverHeartbeatStarted", "serverHeartbeatSucceeded", "serverHeartbeatFailed"];
+declare export var MONGO_CLIENT_EVENTS: [\\"connectionPoolCreated\\", \\"connectionPoolClosed\\", \\"connectionCreated\\", \\"connectionReady\\", \\"connectionClosed\\", \\"connectionCheckOutStarted\\", \\"connectionCheckOutFailed\\", \\"connectionCheckedOut\\", \\"connectionCheckedIn\\", \\"connectionPoolCleared\\", \\"commandStarted\\", \\"commandSucceeded\\", \\"commandFailed\\", \\"serverOpening\\", \\"serverClosed\\", \\"serverDescriptionChanged\\", \\"topologyOpening\\", \\"topologyClosed\\", \\"topologyDescriptionChanged\\", \\"error\\", \\"timeout\\", \\"close\\", \\"serverHeartbeatStarted\\", \\"serverHeartbeatSucceeded\\", \\"serverHeartbeatFailed\\"];
 /**
  * An error generated when the driver API is used incorrectly
  *
@@ -5486,7 +5489,7 @@ declare class MongoCredentials {
   ,
   equals(other: MongoCredentials): boolean
   /**
-   * If the authentication mechanism is set to "default", resolves the authMechanism
+   * If the authentication mechanism is set to \\"default\\", resolves the authMechanism
    * based on the server version and server supported sasl mechanisms.
    *
    * @param hello - A hello response from the server
@@ -5613,11 +5616,11 @@ export { MongoError };
 /** @public */
 
 declare export var MongoErrorLabel: Readonly<{
-  +RetryableWriteError: "RetryableWriteError",
-  +TransientTransactionError: "TransientTransactionError",
-  +UnknownTransactionCommitResult: "UnknownTransactionCommitResult",
-  +ResumableChangeStreamError: "ResumableChangeStreamError",
-  +HandshakeError: "HandshakeError",
+  +RetryableWriteError: \\"RetryableWriteError\\",
+  +TransientTransactionError: \\"TransientTransactionError\\",
+  +UnknownTransactionCommitResult: \\"UnknownTransactionCommitResult\\",
+  +ResumableChangeStreamError: \\"ResumableChangeStreamError\\",
+  +HandshakeError: \\"HandshakeError\\",
   ...
 }>;
 /** @public */
@@ -5748,7 +5751,7 @@ declare class MongoNetworkTimeoutError {
 export { MongoNetworkTimeoutError };
 /**
  * An error thrown when the user attempts to operate on a database or collection through a MongoClient
- * that has not yet successfully called the "connect" method
+ * that has not yet successfully called the \\"connect\\" method
  *
  * @public
  * @category Error
@@ -5999,7 +6002,7 @@ declare type NestedPaths<Type> = any;
 export type { NestedPaths
 /**
  * @public
- * A type that extends Document but forbids anything that "looks like" an object id.
+ * A type that extends Document but forbids anything that \\"looks like\\" an object id.
  */
 };
 declare type NonObjectIdLikeDocument = $ObjMapi<ObjectIdLike, <key>(key) => empty> & Document;
@@ -6067,7 +6070,7 @@ export type { OperationTime
  * @public
  */
 };
-declare type OptionalId<TSchema> = EnhancedOmit<TSchema, "_id"> & {
+declare type OptionalId<TSchema> = EnhancedOmit<TSchema, \\"_id\\"> & {
   _id?: InferIdType<TSchema>,
   ...
 };
@@ -6080,8 +6083,8 @@ export type { OptionalId
  *
  * @privateRemarks
  * \`ObjectId extends TSchema['_id']\` is a confusing ordering at first glance. Rather than ask
- * \`TSchema['_id'] extends ObjectId\` which translated to "Is the _id property ObjectId?"
- * we instead ask "Does ObjectId look like (have the same shape) as the _id?"
+ * \`TSchema['_id'] extends ObjectId\` which translated to \\"Is the _id property ObjectId?\\"
+ * we instead ask \\"Does ObjectId look like (have the same shape) as the _id?\\"
  */
 };
 declare type OptionalUnlessRequiredId<TSchema> = any;
@@ -6106,9 +6109,9 @@ declare export declare interface PkFactory {
 /** @public */
 
 declare export var ProfilingLevel: Readonly<{
-  +off: "off",
-  +slowOnly: "slow_only",
-  +all: "all",
+  +off: \\"off\\",
+  +slowOnly: \\"slow_only\\",
+  +all: \\"all\\",
   ...
 }>;
 /** @public */
@@ -6211,21 +6214,21 @@ declare class ReadConcern {
     level?: ReadConcernLevel,
     ...
   }): ReadConcern | void,
-  static +MAJORITY: "majority",
-  static +AVAILABLE: "available",
-  static +LINEARIZABLE: "linearizable",
-  static +SNAPSHOT: "snapshot",
+  static +MAJORITY: \\"majority\\",
+  static +AVAILABLE: \\"available\\",
+  static +LINEARIZABLE: \\"linearizable\\",
+  static +SNAPSHOT: \\"snapshot\\",
   toJSON(): Document,
 }
 export { ReadConcern };
 /** @public */
 
 declare export var ReadConcernLevel: Readonly<{
-  +local: "local",
-  +majority: "majority",
-  +linearizable: "linearizable",
-  +available: "available",
-  +snapshot: "snapshot",
+  +local: \\"local\\",
+  +majority: \\"majority\\",
+  +linearizable: \\"linearizable\\",
+  +available: \\"available\\",
+  +snapshot: \\"snapshot\\",
   ...
 }>;
 /** @public */
@@ -6253,11 +6256,11 @@ declare class ReadPreference {
   hedge?: HedgeOptions,
   maxStalenessSeconds?: number,
   minWireVersion?: number,
-  static PRIMARY: "primary",
-  static PRIMARY_PREFERRED: "primaryPreferred",
-  static SECONDARY: "secondary",
-  static SECONDARY_PREFERRED: "secondaryPreferred",
-  static NEAREST: "nearest",
+  static PRIMARY: \\"primary\\",
+  static PRIMARY_PREFERRED: \\"primaryPreferred\\",
+  static SECONDARY: \\"secondary\\",
+  static SECONDARY_PREFERRED: \\"secondaryPreferred\\",
+  static NEAREST: \\"nearest\\",
   static primary: ReadPreference,
   static primaryPreferred: ReadPreference,
   static secondary: ReadPreference,
@@ -6299,14 +6302,14 @@ declare class ReadPreference {
   ,
   isValid(mode?: string): boolean
   /**
-   * Indicates that this readPreference needs the "secondaryOk" bit when sent over the wire
+   * Indicates that this readPreference needs the \\"secondaryOk\\" bit when sent over the wire
    * @deprecated Use secondaryOk instead
    * @see https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#op-query
    */
   ,
   slaveOk(): boolean
   /**
-   * Indicates that this readPreference needs the "SecondaryOk" bit when sent over the wire
+   * Indicates that this readPreference needs the \\"SecondaryOk\\" bit when sent over the wire
    * @see https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#op-query
    */
   ,
@@ -6348,11 +6351,11 @@ declare export declare interface ReadPreferenceLikeOptions extends ReadPreferenc
 /** @public */
 
 declare export var ReadPreferenceMode: Readonly<{
-  +primary: "primary",
-  +primaryPreferred: "primaryPreferred",
-  +secondary: "secondary",
-  +secondaryPreferred: "secondaryPreferred",
-  +nearest: "nearest",
+  +primary: \\"primary\\",
+  +primaryPreferred: \\"primaryPreferred\\",
+  +secondary: \\"secondary\\",
+  +secondaryPreferred: \\"secondaryPreferred\\",
+  +nearest: \\"nearest\\",
   ...
 }>;
 /** @public */
@@ -6453,8 +6456,8 @@ export type { ResumeToken
 /** @public */
 };
 declare export var ReturnDocument: Readonly<{
-  +BEFORE: "before",
-  +AFTER: "after",
+  +BEFORE: \\"before\\",
+  +AFTER: \\"after\\",
   ...
 }>;
 /** @public */
@@ -6527,7 +6530,7 @@ declare export declare interface ServerApi {
 /** @public */
 
 declare export var ServerApiVersion: Readonly<{
-  +v1: "1",
+  +v1: \\"1\\",
   ...
 }>;
 /** @public */
@@ -6728,7 +6731,7 @@ declare class ServerOpeningEvent {
 export { ServerOpeningEvent };
 /** @public */
 
-declare type ServerOptions = Omit<ConnectionPoolOptions, "id" | "generation" | "hostAddress"> & MonitorOptions;
+declare type ServerOptions = Omit<ConnectionPoolOptions, \\"id\\" | \\"generation\\" | \\"hostAddress\\"> & MonitorOptions;
 export type { ServerOptions
 /* Excluded from this release type: ServerPrivate */
 
@@ -6756,7 +6759,7 @@ declare class ServerSession {
   /**
    * Determines if the server session has timed out.
    *
-   * @param sessionTimeoutMinutes - The server's "logicalSessionTimeoutMinutes"
+   * @param sessionTimeoutMinutes - The server's \\"logicalSessionTimeoutMinutes\\"
    */
   ,
   hasTimedOut(sessionTimeoutMinutes: number): boolean
@@ -6779,16 +6782,16 @@ export type { ServerSessionId
  */
 };
 declare export var ServerType: Readonly<{
-  +Standalone: "Standalone",
-  +Mongos: "Mongos",
-  +PossiblePrimary: "PossiblePrimary",
-  +RSPrimary: "RSPrimary",
-  +RSSecondary: "RSSecondary",
-  +RSArbiter: "RSArbiter",
-  +RSOther: "RSOther",
-  +RSGhost: "RSGhost",
-  +Unknown: "Unknown",
-  +LoadBalancer: "LoadBalancer",
+  +Standalone: \\"Standalone\\",
+  +Mongos: \\"Mongos\\",
+  +PossiblePrimary: \\"PossiblePrimary\\",
+  +RSPrimary: \\"RSPrimary\\",
+  +RSSecondary: \\"RSSecondary\\",
+  +RSArbiter: \\"RSArbiter\\",
+  +RSOther: \\"RSOther\\",
+  +RSGhost: \\"RSGhost\\",
+  +Unknown: \\"Unknown\\",
+  +LoadBalancer: \\"LoadBalancer\\",
   ...
 }>;
 /** @public */
@@ -6818,7 +6821,7 @@ declare type Sort = string | Exclude<SortDirection, {
 export type { Sort
 /** @public */
 };
-declare type SortDirection = 1 | -1 | "asc" | "desc" | "ascending" | "descending" | {
+declare type SortDirection = 1 | -1 | \\"asc\\" | \\"desc\\" | \\"ascending\\" | \\"descending\\" | {
   $meta: string,
   ...
 };
@@ -6899,7 +6902,7 @@ export type { TagSet
 declare export declare interface TimeSeriesCollectionOptions extends Document {
   timeField: string,
   metaField?: string,
-  granularity?: "seconds" | "minutes" | "hours" | string,
+  granularity?: \\"seconds\\" | \\"minutes\\" | \\"hours\\" | string,
 }
 export { Timestamp };
 /* Excluded from this release type: Topology */
@@ -7000,7 +7003,7 @@ declare type TopologyEvents = {
   close(): void,
   timeout(): void,
   ...
-} & Omit<ServerEvents, "connect"> & ConnectionPoolEvents & ConnectionEvents & EventEmitterWithState;
+} & Omit<ServerEvents, \\"connect\\"> & ConnectionPoolEvents & ConnectionEvents & EventEmitterWithState;
 export type { TopologyEvents
 /**
  * Emitted when topology is initialized.
@@ -7051,12 +7054,12 @@ declare export declare interface TopologyOptions extends BSONSerializeOptions, S
  */
 
 declare export var TopologyType: Readonly<{
-  +Single: "Single",
-  +ReplicaSetNoPrimary: "ReplicaSetNoPrimary",
-  +ReplicaSetWithPrimary: "ReplicaSetWithPrimary",
-  +Sharded: "Sharded",
-  +Unknown: "Unknown",
-  +LoadBalanced: "LoadBalanced",
+  +Single: \\"Single\\",
+  +ReplicaSetNoPrimary: \\"ReplicaSetNoPrimary\\",
+  +ReplicaSetWithPrimary: \\"ReplicaSetWithPrimary\\",
+  +Sharded: \\"Sharded\\",
+  +Unknown: \\"Unknown\\",
+  +LoadBalanced: \\"LoadBalanced\\",
   ...
 }>;
 /** @public */
@@ -7209,7 +7212,7 @@ declare export declare interface UpdateDescription<TSchema: Document = Document>
 
 declare type UpdateFilter<TSchema> = {
   $currentDate?: OnlyFieldsOfType<TSchema, Date | Timestamp, true | {
-    $type: "date" | "timestamp",
+    $type: \\"date\\" | \\"timestamp\\",
     ...
   }>,
   $inc?: OnlyFieldsOfType<TSchema, NumericType | void>,
@@ -7219,7 +7222,7 @@ declare type UpdateFilter<TSchema> = {
   $rename?: Record<string, string>,
   $set?: MatchKeysAndValues<TSchema>,
   $setOnInsert?: MatchKeysAndValues<TSchema>,
-  $unset?: OnlyFieldsOfType<TSchema, any, "" | true | 1>,
+  $unset?: OnlyFieldsOfType<TSchema, any, \\"\\" | true | 1>,
   $addToSet?: SetFields<TSchema>,
   $pop?: OnlyFieldsOfType<TSchema, ReadonlyArray<any>, 1 | -1>,
   $pull?: PullOperator<TSchema>,
@@ -7351,7 +7354,7 @@ declare export declare interface ValidateCollectionOptions extends CommandOperat
 }
 /** @public */
 
-declare type W = number | "majority";
+declare type W = number | \\"majority\\";
 export type { W
 /* Excluded from this release type: WaitQueueMember */
 
@@ -7504,14 +7507,14 @@ declare export declare interface WiredTigerData extends Document {
 
 /** Add an _id field to an object shaped type @public */
 
-declare type WithId<TSchema> = EnhancedOmit<TSchema, "_id"> & {
+declare type WithId<TSchema> = EnhancedOmit<TSchema, \\"_id\\"> & {
   _id: InferIdType<TSchema>,
   ...
 };
 export type { WithId
 /** Remove the _id field from an object shaped type @public */
 };
-declare type WithoutId<TSchema> = Omit<TSchema, "_id">;
+declare type WithoutId<TSchema> = Omit<TSchema, \\"_id\\">;
 export type { WithoutId
 /** @public */
 };
@@ -7649,3 +7652,4 @@ declare class WriteError {
 }
 export { WriteError };
 /* Excluded from this release type: WriteProtocolMessageType */"
+`;

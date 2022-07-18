@@ -24,6 +24,7 @@ import type { ArrayPattern,
   InterfaceDeclaration,
   InterfaceExtends,
   MemberExpression,
+  Node,
   ObjectPattern,
   ObjectProperty,
   ObjectTypeAnnotation,
@@ -62,7 +63,8 @@ import type { ArrayPattern,
   TypeParameterInstantiation,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
-import { anyTypeAnnotation, arrayTypeAnnotation,
+import { anyTypeAnnotation,
+  arrayTypeAnnotation,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
   classBody,
@@ -89,6 +91,7 @@ import { anyTypeAnnotation, arrayTypeAnnotation,
   identifier,
   importDeclaration,
   indexedAccessType,
+  inheritsComments,
   interfaceDeclaration,
   interfaceExtends,
   intersectionTypeAnnotation,
@@ -131,6 +134,11 @@ type TransformContext = {|
   interfaces: { [key: string]: DeclareInterface | InterfaceDeclaration, ... },
   variables: { [key: string]: DeclareVariable | VariableDeclarator, ... },
 |};
+
+function copyComments<T: Node>(input: Node, output: T): T {
+  inheritsComments<T>(output, input);
+  return output;
+}
 
 function transformTSTypeAnnotation(
   input: TSTypeAnnotation | TypeAnnotation,
@@ -192,7 +200,7 @@ function convertMemberExpressionIdentifier(
     return null;
   }
 
-  return identifier(`@@${property.name}`);
+  return copyComments(input, identifier(`@@${property.name}`));
 }
 
 function getObjectPropertyKey(
@@ -223,7 +231,7 @@ function getObjectPropertyKey(
   }
 
   if (key.type === 'StringLiteral') {
-    return identifier(key.value);
+    return copyComments(inputKey, identifier(key.value));
   }
 
   return key;
@@ -239,14 +247,20 @@ function transformTSMethodSignature(
 
   // Not supported
   if (key === null) {
-    return objectTypeIndexer(null, anyTypeAnnotation(), value);
+    return copyComments(
+      input,
+      objectTypeIndexer(null, anyTypeAnnotation(), value),
+    );
   }
 
   if (
     input.computed !== true
     || (key.type === 'Identifier' && ctx.variables[key.name] == null)
   ) {
-    const prop = objectTypeProperty(key, value, null);
+    const prop = copyComments(
+      input,
+      objectTypeProperty(key, value, null),
+    );
 
     if (input.optional === true) {
       prop.optional = true;
@@ -257,10 +271,13 @@ function transformTSMethodSignature(
     return prop;
   }
 
-  return objectTypeIndexer(
-    null,
-    typeofTypeAnnotation(genericTypeAnnotation(key)),
-    input.optional === true ? nullableTypeAnnotation(value) : value,
+  return copyComments(
+    input,
+    objectTypeIndexer(
+      null,
+      typeofTypeAnnotation(genericTypeAnnotation(key)),
+      input.optional === true ? nullableTypeAnnotation(value) : value,
+    ),
   );
 }
 
@@ -281,10 +298,13 @@ function transformTSPropertySignature(
     : transformTSTypeAnnotation(input.typeAnnotation, ctx);
 
   if (key === null || input.typeAnnotation === null) {
-    return objectTypeIndexer(
-      null,
-      anyTypeAnnotation(),
-      input.optional === true ? nullableTypeAnnotation(value) : value,
+    return copyComments(
+      input,
+      objectTypeIndexer(
+        null,
+        anyTypeAnnotation(),
+        input.optional === true ? nullableTypeAnnotation(value) : value,
+      ),
     );
   }
 
@@ -292,10 +312,13 @@ function transformTSPropertySignature(
     input.computed !== true
     || (key.type === 'Identifier' && ctx.variables[key.name] == null)
   ) {
-    const prop = objectTypeProperty(
-      key,
-      value,
-      input.readonly === true ? variance('plus') : null,
+    const prop = copyComments(
+      input,
+      objectTypeProperty(
+        key,
+        value,
+        input.readonly === true ? variance('plus') : null,
+      ),
     );
 
     if (input.optional === true) {
@@ -305,10 +328,13 @@ function transformTSPropertySignature(
     return prop;
   }
 
-  return objectTypeIndexer(
-    null,
-    typeofTypeAnnotation(genericTypeAnnotation(key)),
-    input.optional === true ? nullableTypeAnnotation(value) : value,
+  return copyComments(
+    input,
+    objectTypeIndexer(
+      null,
+      typeofTypeAnnotation(genericTypeAnnotation(key)),
+      input.optional === true ? nullableTypeAnnotation(value) : value,
+    ),
   );
 }
 
@@ -318,8 +344,11 @@ function transformTSTypeElement(
 ): ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty {
   switch (input.type) {
     case 'TSCallSignatureDeclaration': {
-      return objectTypeCallProperty(
-        transformFunctionTypeAnnotation(input, ctx),
+      return copyComments(
+        input,
+        objectTypeCallProperty(
+          transformFunctionTypeAnnotation(input, ctx),
+        ),
       );
     }
     case 'TSPropertySignature': {
@@ -335,10 +364,13 @@ function transformTSTypeElement(
         );
       }
 
-      const prop = objectTypeProperty(
-        identifier('constructor'),
-        transformFunctionTypeAnnotation(input, ctx),
-        null,
+      const prop = copyComments(
+        input,
+        objectTypeProperty(
+          identifier('constructor'),
+          transformFunctionTypeAnnotation(input, ctx),
+          null,
+        ),
       );
       prop.method = true;
 
@@ -390,7 +422,10 @@ function transformTSTypeElement(
       }
       const value = transformTSTypeAnnotation(input.typeAnnotation, ctx);
 
-      return objectTypeIndexer(id, key, value, null);
+      return copyComments(
+        input,
+        objectTypeIndexer(id, key, value, null),
+      );
     }
     default: {
       throw new Error(`[transformTSTypeElement]: not supported ${input.type}`);
@@ -412,9 +447,12 @@ function transformRestElement(
     throw new Error('[transformRestElement]: not supported typeAnnotation');
   }
 
-  const p = functionTypeParam(
-    input.argument,
-    transformTSTypeAnnotation(input.typeAnnotation, ctx),
+  const p = copyComments(
+    input,
+    functionTypeParam(
+      input.argument,
+      transformTSTypeAnnotation(input.typeAnnotation, ctx),
+    ),
   );
 
   if (input.optional === true) {
@@ -445,16 +483,22 @@ function transformObjectProperties(
         );
       }
 
-      return objectTypeProperty(
-        p.key,
-        transformTSLiteralTypeElement(p.value),
-        null,
+      return copyComments(
+        p,
+        objectTypeProperty(
+          p.key,
+          transformTSLiteralTypeElement(p.value),
+          null,
+        ),
       );
     }
 
     if (p.type === 'RestElement') {
-      return objectTypeSpreadProperty(
-        transformRestElement(p, ctx).typeAnnotation,
+      return copyComments(
+        p,
+        objectTypeSpreadProperty(
+          transformRestElement(p, ctx).typeAnnotation,
+        ),
       );
     }
 
@@ -466,14 +510,17 @@ function transformArrayPattern(
   input: ArrayPattern,
   ctx: TransformContext,
 ): FunctionTypeParam {
-  const p = functionTypeParam(
-    null,
-    input.typeAnnotation == null
+  const p = copyComments(
+    input,
+    functionTypeParam(
+      null,
+      input.typeAnnotation == null
       || input.typeAnnotation.type !== 'TSTypeAnnotation'
-      ? tupleTypeAnnotation(
-        input.elements.map(e => transformPatternLike(e, ctx)),
-      )
-      : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+        ? tupleTypeAnnotation(
+          input.elements.map(e => transformPatternLike(e, ctx)),
+        )
+        : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+    ),
   );
   if (input.optional === true) {
     p.optional = true;
@@ -486,11 +533,14 @@ function transformObjectPattern(
   input: ObjectPattern,
   ctx: TransformContext,
 ): FunctionTypeParam {
-  const p = functionTypeParam(
-    null,
-    input.typeAnnotation == null || input.typeAnnotation.type === 'Noop'
-      ? objectTypeAnnotation(transformObjectProperties(input.properties, ctx))
-      : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+  const p = copyComments(
+    input,
+    functionTypeParam(
+      null,
+      input.typeAnnotation == null || input.typeAnnotation.type === 'Noop'
+        ? objectTypeAnnotation(transformObjectProperties(input.properties, ctx))
+        : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+    ),
   );
 
   return p;
@@ -546,13 +596,16 @@ function transformFunctionParams(
 
   const paramsList = params.map((param) => {
     if (param.type === 'ObjectPattern') {
-      const p = functionTypeParam(
-        null,
-        param.typeAnnotation == null || param.typeAnnotation.type === 'Noop'
-          ? objectTypeAnnotation(
-            transformObjectProperties(param.properties, ctx),
-          )
-          : transformTSTypeAnnotation(param.typeAnnotation, ctx),
+      const p = copyComments(
+        param,
+        functionTypeParam(
+          null,
+          param.typeAnnotation == null || param.typeAnnotation.type === 'Noop'
+            ? objectTypeAnnotation(
+              transformObjectProperties(param.properties, ctx),
+            )
+            : transformTSTypeAnnotation(param.typeAnnotation, ctx),
+        ),
       );
 
       return p;
@@ -571,9 +624,12 @@ function transformFunctionParams(
       );
     }
 
-    const p = functionTypeParam(
+    const p = copyComments(
       param,
-      transformTSTypeAnnotation(param.typeAnnotation, ctx),
+      functionTypeParam(
+        param,
+        transformTSTypeAnnotation(param.typeAnnotation, ctx),
+      ),
     );
     if (param.optional === true) {
       p.optional = true;
@@ -604,13 +660,16 @@ function transformFunctionTypeAnnotation(
 
   const [params, restParam] = transformFunctionParams(input.parameters, ctx);
 
-  return functionTypeAnnotation(
-    input.typeParameters == null
-      ? null
-      : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
-    params,
-    restParam,
-    returnType,
+  return copyComments(
+    input,
+    functionTypeAnnotation(
+      input.typeParameters == null
+        ? null
+        : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
+      params,
+      restParam,
+      returnType,
+    ),
   );
 }
 
@@ -650,8 +709,11 @@ function transformTSInterfaceBody(
   input: TSInterfaceBody,
   ctx: TransformContext,
 ): ObjectTypeAnnotation {
-  const out = createObjectTypeAnnotation(
-    input.body.map(s => transformTSTypeElement(s, ctx)),
+  const out = copyComments(
+    input,
+    createObjectTypeAnnotation(
+      input.body.map(s => transformTSTypeElement(s, ctx)),
+    ),
   );
   out.inexact = null;
   return out;
@@ -661,8 +723,11 @@ function transformTSTypeParameterInstantiation(
   input: TSTypeParameterInstantiation,
   ctx: TransformContext,
 ): TypeParameterInstantiation {
-  return typeParameterInstantiation(
-    input.params.map(p => transformTsType(p, ctx)),
+  return copyComments(
+    input,
+    typeParameterInstantiation(
+      input.params.map(p => transformTsType(p, ctx)),
+    ),
   );
 }
 
@@ -671,18 +736,30 @@ function transformTSLiteralTypeElement(
 ): FlowType {
   switch (input.type) {
     case 'NumericLiteral':
-      return numberLiteralTypeAnnotation(input.value);
+      return copyComments(
+        input,
+        numberLiteralTypeAnnotation(input.value),
+      );
     case 'BooleanLiteral':
-      return booleanLiteralTypeAnnotation(input.value);
+      return copyComments(
+        input,
+        booleanLiteralTypeAnnotation(input.value),
+      );
     case 'StringLiteral':
-      return stringLiteralTypeAnnotation(input.value);
+      return copyComments(
+        input,
+        stringLiteralTypeAnnotation(input.value),
+      );
     case 'UnaryExpression': {
       if (input.argument.type !== 'NumericLiteral' || input.operator !== '-') {
         throw new Error(
           `transformTSLiteralTypeElement/UnaryExpression: not supported ${input.operator} ${input.argument.type}`,
         );
       }
-      return numberLiteralTypeAnnotation(-input.argument.value);
+      return copyComments(
+        input,
+        numberLiteralTypeAnnotation(-input.argument.value),
+      );
     }
     default: {
       throw new Error(
@@ -703,13 +780,19 @@ function transformTSMappedType(
     },
   } = input;
 
-  if (typeAnnotation == null) {
+  if (input.typeAnnotation == null) {
     console.error('transformTSMappedType: typeAnnotation is null');
   }
 
   const returnType = input.typeAnnotation == null
-    ? anyTypeAnnotation()
-    : transformTsType(input.typeAnnotation, ctx);
+    ? copyComments(
+      input,
+      anyTypeAnnotation(),
+    )
+    : copyComments(
+      input,
+      transformTsType(input.typeAnnotation, ctx),
+    );
 
   if (constraint == null) {
     console.error('transformTSMappedType: constraint is null');
@@ -735,22 +818,25 @@ function transformTSMappedType(
   );
   fnTypeParam.name = name;
 
-  return genericTypeAnnotation(
-    identifier('$ObjMapi'),
-    typeParameterInstantiation([
-      objType,
-      functionTypeAnnotation(
-        typeParameterDeclaration([fnTypeParam]),
-        [functionTypeParam(
+  return copyComments(
+    input,
+    genericTypeAnnotation(
+      identifier('$ObjMapi'),
+      typeParameterInstantiation([
+        objType,
+        functionTypeAnnotation(
+          typeParameterDeclaration([fnTypeParam]),
+          [functionTypeParam(
+            null,
+            genericTypeAnnotation(
+              identifier(input.typeParameter.name),
+            ),
+          )],
           null,
-          genericTypeAnnotation(
-            identifier(input.typeParameter.name),
-          ),
-        )],
-        null,
-        returnType,
-      ),
-    ]),
+          returnType,
+        ),
+      ]),
+    ),
   );
 }
 
@@ -761,51 +847,84 @@ function transformTsType(
 ): FlowType {
   switch (input.type) {
     case 'TSTypeLiteral': {
-      return createObjectTypeAnnotation(
-        input.members.map(m => transformTSTypeElement(m, ctx)),
+      return copyComments(
+        input,
+        createObjectTypeAnnotation(
+          input.members.map(m => transformTSTypeElement(m, ctx)),
+        ),
       );
     }
     case 'TSStringKeyword':
-      return stringTypeAnnotation();
+      return copyComments(
+        input,
+        stringTypeAnnotation(),
+      );
     case 'TSNumberKeyword':
-      return numberTypeAnnotation();
+      return copyComments(
+        input,
+        numberTypeAnnotation(),
+      );
     case 'TSVoidKeyword':
-      return voidTypeAnnotation();
+      return copyComments(
+        input,
+        voidTypeAnnotation(),
+      );
     case 'TSAnyKeyword':
       // TODO: add option to return mixedTypeAnnotation
-      return anyTypeAnnotation();
+      return copyComments(
+        input,
+        anyTypeAnnotation(),
+      );
     case 'TSBooleanKeyword':
-      return booleanTypeAnnotation();
+      return copyComments(
+        input,
+        booleanTypeAnnotation(),
+      );
     case 'TSNullKeyword':
-      return nullLiteralTypeAnnotation();
+      return copyComments(
+        input,
+        nullLiteralTypeAnnotation(),
+      );
     case 'TSUndefinedKeyword':
-      return voidTypeAnnotation();
+      return copyComments(
+        input,
+        voidTypeAnnotation(),
+      );
     case 'TSUnionType':
-      return unionTypeAnnotation(
-        input.types.map(t => transformTsType(t, ctx)),
+      return copyComments(
+        input,
+        unionTypeAnnotation(
+          input.types.map(t => transformTsType(t, ctx)),
+        ),
       );
     case 'TSObjectKeyword': {
       const t = objectTypeAnnotation([], null, null, null, false);
       t.inexact = true;
 
       if (flags.readOnly === true) {
-        return genericTypeAnnotation(
-          identifier('$ReadOnly'),
-          typeParameterInstantiation([t]),
+        return copyComments(
+          input,
+          genericTypeAnnotation(
+            identifier('$ReadOnly'),
+            typeParameterInstantiation([t]),
+          ),
         );
       }
 
-      return t;
+      return copyComments(
+        input,
+        t,
+      );
     }
     case 'TSLiteralType': {
       return transformTSLiteralTypeElement(input.literal);
     }
     case 'TSNeverKeyword':
-      return emptyTypeAnnotation();
+      return copyComments(input, emptyTypeAnnotation());
     case 'TSUnknownKeyword':
-      return mixedTypeAnnotation();
+      return copyComments(input, mixedTypeAnnotation());
     case 'TSSymbolKeyword':
-      return symbolTypeAnnotation();
+      return copyComments(input, symbolTypeAnnotation());
     case 'TSTypeOperator': {
       switch (input.operator) {
         case 'unique':
@@ -813,43 +932,55 @@ function transformTsType(
         case 'readonly':
           return transformTsType(input.typeAnnotation, ctx, { readOnly: true });
         case 'keyof':
-          return genericTypeAnnotation(
-            identifier('$Keys'),
-            typeParameterInstantiation([
-              transformTsType(input.typeAnnotation, ctx),
-            ]),
+          return copyComments(
+            input,
+            genericTypeAnnotation(
+              identifier('$Keys'),
+              typeParameterInstantiation([
+                transformTsType(input.typeAnnotation, ctx),
+              ]),
+            ),
           );
         default:
           console.error(
             `transformTSTypeAnnotation/TSTypeOperator: not supported ${input.operator}`,
           );
-          return anyTypeAnnotation();
+          return copyComments(input, anyTypeAnnotation());
       }
     }
     case 'TSTupleType': {
-      return tupleTypeAnnotation(
-        input.elementTypes.map(el => transformTsType(
-          el.type === 'TSNamedTupleMember' ? el.elementType : el,
-          ctx,
-        )),
+      return copyComments(
+        input,
+        tupleTypeAnnotation(
+          input.elementTypes.map(el => transformTsType(
+            el.type === 'TSNamedTupleMember' ? el.elementType : el,
+            ctx,
+          )),
+        ),
       );
     }
     case 'TSArrayType': {
       if (flags.readOnly === true) {
-        return genericTypeAnnotation(
-          identifier('$ReadOnlyArray'),
-          typeParameterInstantiation([transformTsType(input.elementType, ctx)]),
+        return copyComments(
+          input,
+          genericTypeAnnotation(
+            identifier('$ReadOnlyArray'),
+            typeParameterInstantiation([transformTsType(input.elementType, ctx)]),
+          ),
         );
       }
 
       return arrayTypeAnnotation(transformTsType(input.elementType, ctx));
     }
     case 'TSTypeReference': {
-      return genericTypeAnnotation(
-        transformTSEntityName(input.typeName),
-        input.typeParameters == null
-          ? null
-          : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
+      return copyComments(
+        input,
+        genericTypeAnnotation(
+          transformTSEntityName(input.typeName),
+          input.typeParameters == null
+            ? null
+            : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
+        ),
       );
     }
     case 'TSFunctionType': {
@@ -857,39 +988,48 @@ function transformTsType(
         input.parameters,
         ctx,
       );
-      return functionTypeAnnotation(
-        input.typeParameters == null
-          ? null
-          : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
-        params,
-        restParam,
-        input.typeAnnotation === null
-          ? voidTypeAnnotation()
-          : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+      return copyComments(
+        input,
+        functionTypeAnnotation(
+          input.typeParameters == null
+            ? null
+            : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
+          params,
+          restParam,
+          input.typeAnnotation === null
+            ? voidTypeAnnotation()
+            : transformTSTypeAnnotation(input.typeAnnotation, ctx),
+        ),
       );
     }
     case 'TSIntersectionType': {
-      return intersectionTypeAnnotation(
-        input.types.map(t => transformTsType(t, ctx)),
+      return copyComments(
+        input,
+        intersectionTypeAnnotation(
+          input.types.map(t => transformTsType(t, ctx)),
+        ),
       );
     }
     case 'TSThisType': {
-      return thisTypeAnnotation();
+      return copyComments(input, thisTypeAnnotation());
     }
     case 'TSMappedType': {
       return transformTSMappedType(input, ctx);
     }
     case 'TSIndexedAccessType': {
-      return indexedAccessType(
-        transformTsType(input.objectType, ctx),
-        transformTsType(input.indexType, ctx),
+      return copyComments(
+        input,
+        indexedAccessType(
+          transformTsType(input.objectType, ctx),
+          transformTsType(input.indexType, ctx),
+        ),
       );
     }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
       // eslint-disable-next-line no-unused-vars
       const n: empty = input.type;
-      return anyTypeAnnotation();
+      return copyComments(input, anyTypeAnnotation());
     }
   }
 }
@@ -908,15 +1048,18 @@ function transformTSTypeParameter(
 
   ast.name = input.name;
 
-  return ast;
+  return copyComments(input, ast);
 }
 
 function transformTSTypeParameterDeclaration(
   input: TSTypeParameterDeclaration,
   ctx: TransformContext,
 ): TypeParameterDeclaration {
-  return typeParameterDeclaration(
-    input.params.map(p => transformTSTypeParameter(p, ctx)),
+  return copyComments(
+    input,
+    typeParameterDeclaration(
+      input.params.map(p => transformTSTypeParameter(p, ctx)),
+    ),
   );
 }
 
@@ -925,21 +1068,27 @@ function transformTSTypeAliasDeclaration(
   ctx: TransformContext,
 ): DeclareTypeAlias | TypeAlias {
   if (input.declare === true) {
-    return declareTypeAlias(
+    return copyComments(
+      input,
+      declareTypeAlias(
+        input.id,
+        input.typeParameters == null
+          ? null
+          : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
+        transformTsType(input.typeAnnotation, ctx),
+      ),
+    );
+  }
+
+  return copyComments(
+    input,
+    typeAlias(
       input.id,
       input.typeParameters == null
         ? null
         : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
       transformTsType(input.typeAnnotation, ctx),
-    );
-  }
-
-  return typeAlias(
-    input.id,
-    input.typeParameters == null
-      ? null
-      : transformTSTypeParameterDeclaration(input.typeParameters, ctx),
-    transformTsType(input.typeAnnotation, ctx),
+    ),
   );
 }
 
@@ -950,16 +1099,22 @@ function transformTSEntityName(
     return input;
   }
 
-  return qualifiedTypeIdentifier(
-    input.right,
-    transformTSEntityName(input.left),
+  return copyComments(
+    input,
+    qualifiedTypeIdentifier(
+      input.right,
+      transformTSEntityName(input.left),
+    ),
   );
 }
 
 function transformTSExpressionWithTypeArguments(
   input: TSExpressionWithTypeArguments,
 ): InterfaceExtends {
-  return interfaceExtends(transformTSEntityName(input.expression));
+  return copyComments(
+    input,
+    interfaceExtends(transformTSEntityName(input.expression)),
+  );
 }
 
 function transformInterfaceDeclaration(
@@ -1030,7 +1185,7 @@ function transformInterfaceDeclaration(
   ast.leadingComments = input.leadingComments;
   ast.innerComments = input.innerComments;
 
-  return ast;
+  return copyComments(input, ast);
 }
 
 function transformExpression<E: Expression>(
@@ -1073,7 +1228,7 @@ function transformExpressionTypeElement(input: Expression): FlowType {
       );
       // eslint-disable-next-line no-unused-vars
       const n: empty = input.type;
-      return anyTypeAnnotation();
+      return copyComments(input, anyTypeAnnotation());
     }
   }
 }
@@ -1089,7 +1244,7 @@ function transformVariableDeclarator(
   if (output.id.type === 'Identifier') {
     ctx.variables[output.id.name] = output;
   }
-  return output;
+  return copyComments(input, output);
 }
 
 function transformClassMethod(
@@ -1099,25 +1254,28 @@ function transformClassMethod(
   switch (input.type) {
     case 'ClassMethod': {
       const key = input.key.type === 'Identifier' && ctx.variables[input.key.name] != null
-        ? unaryExpression('typeof', input.key)
+        ? copyComments(input.key, unaryExpression('typeof', input.key))
         : input.key;
 
-      return classMethod(input.kind, key, input.params, input.body);
+      return copyComments(input, classMethod(input.kind, key, input.params, input.body));
     }
     case 'ClassProperty': {
       const key = input.key.type === 'Identifier' && ctx.variables[input.key.name] != null
-        ? unaryExpression('typeof', input.key)
+        ? copyComments(input, unaryExpression('typeof', input.key))
         : input.key;
 
-      return classProperty(
-        key,
-        input.value,
-        input.typeAnnotation?.type === 'TSTypeAnnotation'
-          ? typeAnnotation(transformTSTypeAnnotation(input.typeAnnotation, ctx))
-          : input.typeAnnotation,
-        input.decorators,
-        input.computed,
-        input.static,
+      return copyComments(
+        input,
+        classProperty(
+          key,
+          input.value,
+          input.typeAnnotation?.type === 'TSTypeAnnotation'
+            ? typeAnnotation(transformTSTypeAnnotation(input.typeAnnotation, ctx))
+            : input.typeAnnotation,
+          input.decorators,
+          input.computed,
+          input.static,
+        ),
       );
     }
     default:
@@ -1148,7 +1306,7 @@ function transformClassDeclarationBody(
       );
 
       if (input.kind === 'constructor') {
-        return objectTypeCallProperty(fn);
+        return copyComments(input, objectTypeCallProperty(fn));
       }
 
       if (
@@ -1164,14 +1322,20 @@ function transformClassDeclarationBody(
         input.key.type === 'Identifier'
         && ctx.variables[input.key.name] != null
       ) {
-        return objectTypeIndexer(
-          null,
-          typeofTypeAnnotation(genericTypeAnnotation(input.key)),
-          input.optional === true ? nullableTypeAnnotation(fn) : fn,
+        return copyComments(
+          input,
+          objectTypeIndexer(
+            null,
+            typeofTypeAnnotation(genericTypeAnnotation(input.key)),
+            input.optional === true ? nullableTypeAnnotation(fn) : fn,
+          ),
         );
       }
 
-      const prop = objectTypeProperty(input.key, fn, variance('plus'));
+      const prop = copyComments(
+        input,
+        objectTypeProperty(input.key, fn, variance('plus')),
+      );
 
       if (input.optional === true) {
         prop.optional = true;
@@ -1215,10 +1379,13 @@ function transformClassDeclarationBody(
         && key.type === 'Identifier'
         && ctx.variables[key.name] != null
       ) {
-        return objectTypeIndexer(
-          null,
-          typeofTypeAnnotation(genericTypeAnnotation(key)),
-          input.optional === true ? nullableTypeAnnotation(value) : value,
+        return copyComments(
+          input,
+          objectTypeIndexer(
+            null,
+            typeofTypeAnnotation(genericTypeAnnotation(key)),
+            input.optional === true ? nullableTypeAnnotation(value) : value,
+          ),
         );
       }
 
@@ -1236,7 +1403,7 @@ function transformClassDeclarationBody(
         prop.static = true;
       }
 
-      return prop;
+      return copyComments(input, prop);
     }
     case 'TSDeclareMethod': {
       const returnType = input.returnType != null && input.returnType.type === 'TSTypeAnnotation'
@@ -1260,7 +1427,7 @@ function transformClassDeclarationBody(
         construct.kind = 'init';
         construct.method = true;
 
-        return construct;
+        return copyComments(input, construct);
       }
 
       const value = input.kind === 'get'
@@ -1298,10 +1465,13 @@ function transformClassDeclarationBody(
         input.key.type === 'Identifier'
         && ctx.variables[input.key.name] != null
       ) {
-        return objectTypeIndexer(
-          null,
-          typeofTypeAnnotation(genericTypeAnnotation(input.key)),
-          input.optional === true ? nullableTypeAnnotation(value) : value,
+        return copyComments(
+          input,
+          objectTypeIndexer(
+            null,
+            typeofTypeAnnotation(genericTypeAnnotation(input.key)),
+            input.optional === true ? nullableTypeAnnotation(value) : value,
+          ),
         );
       }
 
@@ -1318,7 +1488,7 @@ function transformClassDeclarationBody(
         prop.static = true;
       }
 
-      return prop;
+      return copyComments(input, prop);
     }
     default:
       console.log(
@@ -1333,15 +1503,18 @@ function transformInterfaceExtends(
   ctx: TransformContext,
 ): InterfaceExtends {
   if (input.type === 'TSExpressionWithTypeArguments') {
-    return interfaceExtends(
-      transformTSEntityName(input.expression),
-      input.typeParameters == null
-        ? null
-        : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
+    return copyComments(
+      input,
+      interfaceExtends(
+        transformTSEntityName(input.expression),
+        input.typeParameters == null
+          ? null
+          : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
+      ),
     );
   }
 
-  return interfaceExtends(input.id, input.typeParameters);
+  return copyComments(input, interfaceExtends(input.id, input.typeParameters));
 }
 
 function transformClassDeclaration(
@@ -1357,17 +1530,20 @@ function transformClassDeclaration(
     : null;
 
   if (isDeclare) {
-    const classIdentifier = genericTypeAnnotation(
-      input.id,
-      input.typeParameters == null || input.typeParameters.type === 'Noop'
-        ? null
-        : typeParameterInstantiation(
-          input.typeParameters.params.map(
-            param => genericTypeAnnotation(
-              identifier(param.name),
+    const classIdentifier = copyComments(
+      input,
+      genericTypeAnnotation(
+        input.id,
+        input.typeParameters == null || input.typeParameters.type === 'Noop'
+          ? null
+          : typeParameterInstantiation(
+            input.typeParameters.params.map(
+              param => genericTypeAnnotation(
+                identifier(param.name),
+              ),
             ),
           ),
-        ),
+      ),
     );
     const [props, indexers, calls] = input.body.body
       .map(s => transformClassDeclarationBody(s, ctx, classIdentifier))
@@ -1403,7 +1579,7 @@ function transformClassDeclaration(
       output.mixins = ext;
     }
 
-    return output;
+    return copyComments(input, output);
   }
 
   const t = classDeclaration(
@@ -1427,7 +1603,7 @@ function transformClassDeclaration(
     );
   }
 
-  return t;
+  return copyComments(input, t);
 }
 
 function transformIdentifier(
@@ -1440,7 +1616,7 @@ function transformIdentifier(
       transformTSTypeAnnotation(input.typeAnnotation, ctx),
     );
   }
-  return id;
+  return copyComments(input, id);
 }
 
 function transformVariableDeclaratorToDeclareVariable(
@@ -1461,7 +1637,7 @@ function transformVariableDeclaratorToDeclareVariable(
     );
   }
 
-  return output;
+  return copyComments(input, output);
 }
 
 function transformVariableDeclaration(
@@ -1473,10 +1649,10 @@ function transformVariableDeclaration(
   }
 
   return [
-    variableDeclaration(
+    copyComments(input, variableDeclaration(
       input.kind,
       input.declarations.map(d => transformVariableDeclarator(d, ctx)),
-    ),
+    )),
   ];
 }
 
@@ -1528,14 +1704,14 @@ function transformExportSpecifier(
       : transformIdentifier(input.exported, ctx),
   );
   output.exportKind = input.exportKind;
-  return output;
+  return copyComments(input, output);
 }
 
 function transformExportNamespaceSpecifier(
   input: ExportNamespaceSpecifier,
   ctx: TransformContext,
 ) {
-  return exportNamespaceSpecifier(transformIdentifier(input.exported, ctx));
+  return copyComments(input, exportNamespaceSpecifier(transformIdentifier(input.exported, ctx)));
 }
 
 function transformStatement(
@@ -1575,7 +1751,7 @@ function transformStatement(
         output.importKind = 'type';
       }
 
-      return [output];
+      return [copyComments(input, output)];
     }
     case 'ExportNamedDeclaration': {
       if (input.specifiers.length > 0 && input.declaration != null) {
@@ -1583,7 +1759,7 @@ function transformStatement(
           'Unsupported ExportNamedDeclaration: has specifiers & declaration',
           input,
         );
-        return [emptyStatement()];
+        return [copyComments(input, emptyStatement())];
       }
 
       if (input.specifiers.length > 0) {
@@ -1602,7 +1778,7 @@ function transformStatement(
           return acc;
         }, []);
 
-        return [exportNamedDeclaration(null, specifiers, input.source)];
+        return [copyComments(input, exportNamedDeclaration(null, specifiers, input.source))];
       }
 
       const declarations = transformDeclaration(input.declaration, ctx);
@@ -1621,7 +1797,7 @@ function transformStatement(
         if (declaration !== null && declaration.type === 'DeclareClass') {
           return [
             declaration,
-            exportNamedDeclaration(
+            copyComments(input, exportNamedDeclaration(
               null,
               [
                 exportSpecifier(
@@ -1630,17 +1806,17 @@ function transformStatement(
                 ),
               ],
               input.source,
-            ),
+            )),
           ];
         }
 
         if (declaration !== null && declaration.type === 'InterfaceDeclaration') {
           return [
-            exportNamedDeclaration(
+            copyComments(input, exportNamedDeclaration(
               declaration,
               [],
               input.source,
-            ),
+            )),
           ];
         }
 
@@ -1648,10 +1824,10 @@ function transformStatement(
           const exportStatement = exportNamedDeclaration(
             null,
             [
-              exportSpecifier(
+              copyComments(input, exportSpecifier(
                 declaration.id,
                 declaration.id,
-              ),
+              )),
             ],
             input.source,
           );
@@ -1662,7 +1838,7 @@ function transformStatement(
           ];
         }
 
-        return [declareExportDeclaration(declaration, [], input.source)];
+        return [copyComments(input, declareExportDeclaration(declaration, [], input.source))];
       });
     }
     case 'ExportDefaultDeclaration': {
@@ -1672,9 +1848,9 @@ function transformStatement(
           console.log(
             'transformStatement/ExportDefaultDeclaration: DeclareClass not supported',
           );
-          return [emptyStatement()];
+          return [copyComments(input, emptyStatement())];
         }
-        return [exportDefaultDeclaration(declaration)];
+        return [copyComments(input, exportDefaultDeclaration(declaration))];
       }
 
       if (
@@ -1688,36 +1864,36 @@ function transformStatement(
       }
 
       const declaration = transformExpression(input.declaration, ctx);
-      return [exportDefaultDeclaration(declaration)];
+      return [copyComments(input, exportDefaultDeclaration(declaration))];
     }
     case 'ExportAllDeclaration': {
       const output = exportAllDeclaration(input.source);
       output.exportKind = input.exportKind;
-      return [output];
+      return [copyComments(input, output)];
     }
     case 'TSModuleDeclaration': {
       if (input.body.type === 'TSModuleBlock') {
         return [
-          declareModule(
+          copyComments(input, declareModule(
             input.id,
             toFlowModuleBlockStatement(
               input.body.body.flatMap(
                 s => transformStatement(s, ctx),
               ),
             ),
-          ),
+          )),
         ];
       }
       console.log(
         `transformStatement/TSModuleDeclaration: does not support ${input.body.type}`,
       );
-      return [emptyStatement()];
+      return [copyComments(input, emptyStatement())];
     }
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
       // eslint-disable-next-line no-unused-vars
       const n: empty = input.type;
-      return [emptyStatement()];
+      return [copyComments(input, emptyStatement())];
     }
   }
 }
@@ -1728,12 +1904,12 @@ function transformProgram(input: Program): Program {
     variables: {},
   };
 
-  return program(
+  return copyComments(input, program(
     input.body.reduce((acc, s) => {
       acc.push(...transformStatement(s, ctx));
       return acc;
     }, []),
-  );
+  ));
 }
 
 export function tsToFlow(input: string): string {
