@@ -44,6 +44,7 @@ import type { ArrayPattern,
   TSInterfaceBody,
   TSInterfaceDeclaration,
   TSLiteralType,
+  TSMappedType,
   TSMethodSignature,
   TSParameterProperty,
   TSPropertySignature,
@@ -87,6 +88,7 @@ import { anyTypeAnnotation,
   genericTypeAnnotation,
   identifier,
   importDeclaration,
+  indexedAccessType,
   interfaceDeclaration,
   interfaceExtends,
   intersectionTypeAnnotation,
@@ -202,9 +204,10 @@ function getObjectPropertyKey(
     && inputKey.type !== 'StringLiteral'
     && inputKey.type !== 'MemberExpression'
   ) {
-    throw new Error(
+    console.log(
       `getObjectPropertyKey: TSPropertySignature not supported key ${inputKey.type}`,
     );
+    return null;
   }
 
   const key = inputKey.type === 'MemberExpression'
@@ -212,9 +215,10 @@ function getObjectPropertyKey(
     : inputKey;
 
   if (key === null) {
-    throw new Error(
+    console.log(
       `getObjectPropertyKey: TSPropertySignature not supported key ${inputKey.type}`,
     );
+    return null;
   }
 
   if (key.type === 'StringLiteral') {
@@ -231,6 +235,11 @@ function transformTSMethodSignature(
   const key = getObjectPropertyKey(input.key, ctx);
 
   const value = transformFunctionTypeAnnotation(input, ctx);
+
+  // Not supported
+  if (key === null) {
+    return objectTypeIndexer(null, anyTypeAnnotation(), value);
+  }
 
   if (
     input.computed !== true
@@ -261,12 +270,22 @@ function transformTSPropertySignature(
   const key = getObjectPropertyKey(input.key, ctx);
 
   if (input.typeAnnotation == null) {
-    throw new Error(
+    console.log(
       'transformTSTypeElement: TSPropertySignature not supported empty typeAnnotation',
     );
   }
 
-  const value = transformTSTypeAnnotation(input.typeAnnotation, ctx);
+  const value = input.typeAnnotation == null
+    ? anyTypeAnnotation()
+    : transformTSTypeAnnotation(input.typeAnnotation, ctx);
+
+  if (key === null || input.typeAnnotation === null) {
+    return objectTypeIndexer(
+      null,
+      anyTypeAnnotation(),
+      input.optional === true ? nullableTypeAnnotation(value) : value,
+    );
+  }
 
   if (
     input.computed !== true
@@ -672,6 +691,68 @@ function transformTSLiteralTypeElement(
   }
 }
 
+function transformTSMappedType(
+  input: TSMappedType,
+  ctx: TransformContext,
+) {
+  const {
+    typeParameter: {
+      name,
+      constraint,
+    },
+  } = input;
+
+  if (typeAnnotation == null) {
+    console.error('transformTSMappedType: typeAnnotation is null');
+  }
+
+  const returnType = input.typeAnnotation == null
+    ? anyTypeAnnotation()
+    : transformTsType(input.typeAnnotation, ctx);
+
+  if (constraint == null) {
+    console.error('transformTSMappedType: constraint is null');
+  }
+
+  const objType = constraint != null && constraint.type === 'TSTypeOperator' && constraint.operator === 'keyof'
+    ? transformTsType(constraint.typeAnnotation, ctx)
+    : objectTypeAnnotation(
+      [],
+      [
+        objectTypeIndexer(
+          identifier('k'),
+          constraint == null ? anyTypeAnnotation() : transformTsType(constraint, ctx),
+          anyTypeAnnotation(),
+        ),
+      ],
+    );
+
+  const fnTypeParam = typeParameter(
+    null,
+    null,
+    null,
+  );
+  fnTypeParam.name = name;
+
+  return genericTypeAnnotation(
+    identifier('$ObjMapi'),
+    typeParameterInstantiation([
+      objType,
+      functionTypeAnnotation(
+        typeParameterDeclaration([fnTypeParam]),
+        [functionTypeParam(
+          null,
+          genericTypeAnnotation(
+            identifier(input.typeParameter.name),
+          ),
+        )],
+        null,
+        returnType,
+      ),
+    ]),
+  );
+}
+
 function transformTsType(
   input: TSType,
   ctx: TransformContext,
@@ -730,10 +811,18 @@ function transformTsType(
           return transformTsType(input.typeAnnotation, ctx);
         case 'readonly':
           return transformTsType(input.typeAnnotation, ctx, { readOnly: true });
+        case 'keyof':
+          return genericTypeAnnotation(
+            identifier('$Keys'),
+            typeParameterInstantiation([
+              transformTsType(input.typeAnnotation, ctx),
+            ]),
+          );
         default:
-          throw new Error(
+          console.error(
             `transformTSTypeAnnotation/TSTypeOperator: not supported ${input.operator}`,
           );
+          return anyTypeAnnotation();
       }
     }
     case 'TSTupleType': {
@@ -785,6 +874,15 @@ function transformTsType(
     }
     case 'TSThisType': {
       return thisTypeAnnotation();
+    }
+    case 'TSMappedType': {
+      return transformTSMappedType(input, ctx);
+    }
+    case 'TSIndexedAccessType': {
+      return indexedAccessType(
+        transformTsType(input.objectType, ctx),
+        transformTsType(input.indexType, ctx),
+      );
     }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);

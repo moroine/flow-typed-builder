@@ -34,6 +34,7 @@ describe('interface', () => {
     ['flowgen/declaration-file'],
     ['flowgen/exports'],
     ['flowgen/interfaces'],
+    ['flowgen/mapped-types'],
     ['flowgen/string-literals'],
     ['flowgen/variables'],
     ['declare'],
