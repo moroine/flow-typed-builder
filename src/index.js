@@ -62,8 +62,7 @@ import type { ArrayPattern,
   TypeParameterInstantiation,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
-import { anyTypeAnnotation,
-  arrayTypeAnnotation,
+import { anyTypeAnnotation, arrayTypeAnnotation,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
   classBody,
@@ -73,6 +72,7 @@ import { anyTypeAnnotation,
   declareClass,
   declareExportDeclaration,
   declareInterface,
+  declareModule,
   declareTypeAlias,
   declareVariable,
   emptyStatement,
@@ -121,6 +121,7 @@ import { anyTypeAnnotation,
   variableDeclarator,
   variance,
   voidTypeAnnotation } from '@babel/types';
+import { toFlowModuleBlockStatement } from './toFlowModule/toFlowModule';
 
 type TransformTypeFlags = {|
   readOnly?: boolean,
@@ -1483,7 +1484,8 @@ function transformDeclaration(
   input: Declaration | null,
   ctx: TransformContext,
 ): $ReadOnlyArray<
-  DeclareClass | DeclareTypeAlias | DeclareVariable | TypeAlias | VariableDeclaration
+  DeclareClass | DeclareInterface | DeclareTypeAlias
+  | DeclareVariable | InterfaceDeclaration | TypeAlias | VariableDeclaration
 > {
   if (input === null) {
     return [];
@@ -1502,6 +1504,13 @@ function transformDeclaration(
     }
     case 'TSTypeAliasDeclaration':
       return [transformTSTypeAliasDeclaration(input, ctx)];
+    case 'TSInterfaceDeclaration': {
+      const output = transformInterfaceDeclaration(input, ctx);
+      if (output != null) {
+        return [output];
+      }
+      return [];
+    }
     default:
       console.log('[transformDeclaration]: not supported', input.type);
       return [];
@@ -1625,6 +1634,16 @@ function transformStatement(
           ];
         }
 
+        if (declaration !== null && declaration.type === 'InterfaceDeclaration') {
+          return [
+            exportNamedDeclaration(
+              declaration,
+              [],
+              input.source,
+            ),
+          ];
+        }
+
         if (declaration !== null && declaration.type === 'DeclareTypeAlias') {
           const exportStatement = exportNamedDeclaration(
             null,
@@ -1675,6 +1694,24 @@ function transformStatement(
       const output = exportAllDeclaration(input.source);
       output.exportKind = input.exportKind;
       return [output];
+    }
+    case 'TSModuleDeclaration': {
+      if (input.body.type === 'TSModuleBlock') {
+        return [
+          declareModule(
+            input.id,
+            toFlowModuleBlockStatement(
+              input.body.body.flatMap(
+                s => transformStatement(s, ctx),
+              ),
+            ),
+          ),
+        ];
+      }
+      console.log(
+        `transformStatement/TSModuleDeclaration: does not support ${input.body.type}`,
+      );
+      return [emptyStatement()];
     }
     default: {
       console.log(`transformStatement: not supported ${input.type}`);

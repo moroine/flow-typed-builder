@@ -33,6 +33,7 @@ describe('interface', () => {
     ['flowgen/computed'],
     ['flowgen/declaration-file'],
     ['flowgen/exports'],
+    ['flowgen/interface-exports'],
     ['flowgen/interfaces'],
     ['flowgen/mapped-types'],
     ['flowgen/string-literals'],
@@ -40,6 +41,7 @@ describe('interface', () => {
     ['declare'],
     ['interface'],
     ['intersection'],
+    // ['mongo'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });
