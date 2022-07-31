@@ -43,6 +43,7 @@ import type { ArrayPattern,
   ReturnStatement,
   Statement,
   TSCallSignatureDeclaration,
+  TSConditionalType,
   TSConstructSignatureDeclaration,
   TSDeclareFunction,
   TSEntityName,
@@ -61,6 +62,7 @@ import type { ArrayPattern,
   TSTypeParameter,
   TSTypeParameterDeclaration,
   TSTypeParameterInstantiation,
+  TSTypeReference,
   TypeAlias,
   TypeAnnotation,
   TypeParameter,
@@ -68,7 +70,8 @@ import type { ArrayPattern,
   TypeParameterInstantiation,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
-import { anyTypeAnnotation,
+import { addComment,
+  anyTypeAnnotation,
   arrayTypeAnnotation,
   blockStatement,
   booleanLiteralTypeAnnotation,
@@ -140,6 +143,7 @@ type TransformTypeFlags = {|
 
 type TransformContext = {|
   interfaces: { [key: string]: DeclareInterface | InterfaceDeclaration, ... },
+  requireIfHelper: boolean,
   variables: { [key: string]: DeclareVariable | VariableDeclarator, ... },
 |};
 
@@ -848,6 +852,45 @@ function transformTSMappedType(
   );
 }
 
+function transformTSConditionalType(
+  input: TSConditionalType,
+  ctx: TransformContext,
+): GenericTypeAnnotation {
+  ctx.requireIfHelper = true;
+  return copyComments(
+    input,
+    genericTypeAnnotation(
+      identifier('$If'),
+      typeParameterInstantiation([
+        genericTypeAnnotation(
+          identifier('$Assignable'),
+          typeParameterInstantiation([
+            transformTsType(input.checkType, ctx),
+            transformTsType(input.extendsType, ctx),
+          ]),
+        ),
+        transformTsType(input.trueType, ctx),
+        transformTsType(input.falseType, ctx),
+      ]),
+    ),
+  );
+}
+
+function transformTSTypeReference(
+  input: TSTypeReference,
+  ctx: TransformContext,
+): GenericTypeAnnotation {
+  return copyComments(
+    input,
+    genericTypeAnnotation(
+      transformTSEntityName(input.typeName),
+      input.typeParameters == null
+        ? null
+        : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
+    ),
+  );
+}
+
 function transformTsType(
   input: TSType,
   ctx: TransformContext,
@@ -981,15 +1024,7 @@ function transformTsType(
       return arrayTypeAnnotation(transformTsType(input.elementType, ctx));
     }
     case 'TSTypeReference': {
-      return copyComments(
-        input,
-        genericTypeAnnotation(
-          transformTSEntityName(input.typeName),
-          input.typeParameters == null
-            ? null
-            : transformTSTypeParameterInstantiation(input.typeParameters, ctx),
-        ),
-      );
+      return transformTSTypeReference(input, ctx);
     }
     case 'TSFunctionType': {
       const [params, restParam] = transformFunctionParams(
@@ -1032,6 +1067,9 @@ function transformTsType(
           transformTsType(input.indexType, ctx),
         ),
       );
+    }
+    case 'TSConditionalType': {
+      return transformTSConditionalType(input, ctx);
     }
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
@@ -1673,9 +1711,9 @@ function transformTSDeclareFunction(
   input: TSDeclareFunction,
   ctx: TransformContext,
 ): DeclareFunction {
-  if (input.declare !== true) {
-    throw new Error('transformTSDeclareFunction: not supported declare must be true');
-  }
+  // if (input.declare !== true) {
+  //   throw new Error('transformTSDeclareFunction: not supported declare must be true');
+  // }
 
   if (input.id === null) {
     throw new Error('transformTSDeclareFunction: not supported id must be not null');
@@ -2031,17 +2069,148 @@ function transformStatement(
   }
 }
 
+function generateIfHelper() {
+  const typeParamX = typeParameter(
+    typeAnnotation(booleanTypeAnnotation()),
+  );
+  typeParamX.name = 'X';
+
+  const typeParamThen = typeParameter();
+  typeParamThen.name = 'Then';
+
+  const typeParamElse = typeParameter();
+  typeParamElse.name = 'Else';
+  typeParamElse.default = emptyTypeAnnotation();
+
+  const output = typeAlias(
+    identifier('$If'),
+    typeParameterDeclaration([
+      typeParamX, typeParamThen, typeParamElse,
+    ]),
+    genericTypeAnnotation(
+      identifier('$Call'),
+      typeParameterInstantiation([
+        intersectionTypeAnnotation([
+          functionTypeAnnotation(
+            null,
+            [
+              functionTypeParam(null, booleanLiteralTypeAnnotation(true)),
+              functionTypeParam(
+                null,
+                genericTypeAnnotation(identifier('Then')),
+              ),
+              functionTypeParam(
+                null,
+                genericTypeAnnotation(identifier('Else')),
+              ),
+            ],
+            null,
+            genericTypeAnnotation(identifier('Then')),
+          ),
+          functionTypeAnnotation(
+            null,
+            [
+              functionTypeParam(null, booleanLiteralTypeAnnotation(false)),
+              functionTypeParam(
+                null,
+                genericTypeAnnotation(identifier('Then')),
+              ),
+              functionTypeParam(
+                null,
+                genericTypeAnnotation(identifier('Else')),
+              ),
+            ],
+            null,
+            genericTypeAnnotation(
+              identifier('Else'),
+            ),
+          ),
+        ]),
+        genericTypeAnnotation(identifier('X')),
+        genericTypeAnnotation(identifier('Then')),
+        genericTypeAnnotation(identifier('Else')),
+      ]),
+    ),
+  );
+
+  return addComment(
+    output,
+    'leading',
+    ' see https://gist.github.com/thecotne/6e5969f4aaf8f253985ed36b30ac9fe0',
+    true,
+  );
+}
+
+function generateAssignable() {
+  const typeParamA = typeParameter();
+  typeParamA.name = 'A';
+
+  const typeParamB = typeParameter();
+  typeParamB.name = 'B';
+
+  return typeAlias(
+    identifier('$Assignable'),
+    typeParameterDeclaration([
+      typeParamA,
+      typeParamB,
+    ]),
+    genericTypeAnnotation(
+      identifier('$Call'),
+      typeParameterInstantiation([
+        intersectionTypeAnnotation([
+          functionTypeAnnotation(
+            null,
+            [],
+            functionTypeParam(
+              identifier('r'),
+              tupleTypeAnnotation([
+                genericTypeAnnotation(identifier('B')),
+              ]),
+            ),
+            booleanLiteralTypeAnnotation(true),
+          ),
+          functionTypeAnnotation(
+            null,
+            [],
+            functionTypeParam(
+              identifier('r'),
+              tupleTypeAnnotation([
+                genericTypeAnnotation(identifier('A')),
+              ]),
+            ),
+            booleanLiteralTypeAnnotation(false),
+          ),
+        ]),
+        genericTypeAnnotation(identifier('A')),
+      ]),
+    ),
+  );
+}
+
 function transformProgram(input: Program): Program {
   const ctx = {
     interfaces: {},
     variables: {},
+    requireIfHelper: false,
   };
 
+  const body = input.body.reduce((acc, s) => {
+    acc.push(...transformStatement(s, ctx));
+    return acc;
+  }, []);
+
+  const helpers = [];
+
+  if (ctx.requireIfHelper) {
+    helpers.push(generateIfHelper());
+    helpers.push(generateAssignable());
+  }
+
   return copyComments(input, program(
-    input.body.reduce((acc, s) => {
-      acc.push(...transformStatement(s, ctx));
-      return acc;
-    }, []),
+    [
+      ...helpers,
+      ...body,
+    ],
   ));
 }
 

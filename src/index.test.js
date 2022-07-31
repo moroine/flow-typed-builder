@@ -31,7 +31,7 @@ describe('interface', () => {
     ['flowgen/boolean-literals'],
     ['flowgen/classes'],
     ['flowgen/computed'],
-    // ['flowgen/conditional'],
+    ['flowgen/conditional'],
     ['flowgen/declaration-file'],
     ['flowgen/exports'],
     ['flowgen/function-exports'],
