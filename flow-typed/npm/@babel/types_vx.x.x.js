@@ -2121,7 +2121,8 @@ type CommentBlock = BaseComment & {
       | BooleanLiteral
       | NumericLiteral
       | StringLiteral
-      | UnaryExpression,
+      | UnaryExpression
+      | TemplateLiteral,
     type: 'TSLiteralType',
     ...,
   };

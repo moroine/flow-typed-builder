@@ -52,7 +52,7 @@ test.skip('should mongo %s', async () => {
   const input = await readFile(`${__dirname}/tests/fixtures/mongo/input.ts`);
   const output = tsToFlow(input);
 
-  expect(output).toMatchSnapshot();
+  // fs.writeFileSync(`${__dirname}/tests/fixtures/mongo/expected.js`, output);
   // $FlowExpectedError[incompatible-call]
   expect(output).toBeValidFlowTypeDeclarations();
 });

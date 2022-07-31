@@ -773,7 +773,18 @@ function transformTSLiteralTypeElement(
         numberLiteralTypeAnnotation(-input.argument.value),
       );
     }
+    case 'TemplateLiteral': {
+      return addComment(
+        copyComments(
+          input,
+          anyTypeAnnotation(),
+        ),
+        'inner',
+        'TemplateLiteral is not supported by flow',
+      );
+    }
     default: {
+      console.log(input);
       throw new Error(
         `transformTSLiteralTypeElement: not supported ${input.type}`,
       );
@@ -1975,6 +1986,24 @@ function transformStatement(
               [],
               input.source,
             )),
+          ];
+        }
+
+        if (declaration !== null && declaration.type === 'DeclareInterface') {
+          const exportStatement = exportNamedDeclaration(
+            null,
+            [
+              copyComments(input, exportSpecifier(
+                declaration.id,
+                declaration.id,
+              )),
+            ],
+            input.source,
+          );
+          exportStatement.exportKind = 'type';
+          return [
+            declaration,
+            exportStatement,
           ];
         }
 

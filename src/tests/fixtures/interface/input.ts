@@ -3,3 +3,7 @@ interface Person {
   lastName: string;
   age: number;
 };
+
+export declare interface Me extends Person {
+  
+}

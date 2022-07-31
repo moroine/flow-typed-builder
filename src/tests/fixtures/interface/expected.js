@@ -4,3 +4,5 @@ interface Person {
   age: number,
 }
 ;
+declare interface Me extends Person {}
+export type { Me };
