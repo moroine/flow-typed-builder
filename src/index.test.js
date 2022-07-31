@@ -31,8 +31,10 @@ describe('interface', () => {
     ['flowgen/boolean-literals'],
     ['flowgen/classes'],
     ['flowgen/computed'],
+    // ['flowgen/conditional'],
     ['flowgen/declaration-file'],
     ['flowgen/exports'],
+    ['flowgen/function-exports'],
     ['flowgen/interface-exports'],
     ['flowgen/interfaces'],
     ['flowgen/mapped-types'],
@@ -46,7 +48,7 @@ describe('interface', () => {
   });
 });
 
-test('should mongo %s', async () => {
+test.skip('should mongo %s', async () => {
   const input = await readFile(`${__dirname}/tests/fixtures/mongo/input.ts`);
   const output = tsToFlow(input);
 

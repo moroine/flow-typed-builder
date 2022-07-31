@@ -5,11 +5,13 @@
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
 import type { ArrayPattern,
+  BlockStatement,
   ClassBody,
   ClassDeclaration,
   ClassImplements,
   Declaration,
   DeclareClass,
+  DeclareFunction,
   DeclareInterface,
   DeclareTypeAlias,
   DeclareVariable,
@@ -17,6 +19,7 @@ import type { ArrayPattern,
   ExportSpecifier,
   Expression,
   FlowType,
+  FunctionDeclaration,
   FunctionTypeAnnotation,
   FunctionTypeParam,
   GenericTypeAnnotation,
@@ -37,9 +40,11 @@ import type { ArrayPattern,
   Program,
   QualifiedTypeIdentifier,
   RestElement,
+  ReturnStatement,
   Statement,
   TSCallSignatureDeclaration,
   TSConstructSignatureDeclaration,
+  TSDeclareFunction,
   TSEntityName,
   TSExpressionWithTypeArguments,
   TSInterfaceBody,
@@ -65,6 +70,7 @@ import type { ArrayPattern,
   VariableDeclarator } from '@babel/types';
 import { anyTypeAnnotation,
   arrayTypeAnnotation,
+  blockStatement,
   booleanLiteralTypeAnnotation,
   booleanTypeAnnotation,
   classBody,
@@ -73,6 +79,7 @@ import { anyTypeAnnotation,
   classProperty,
   declareClass,
   declareExportDeclaration,
+  declareFunction,
   declareInterface,
   declareModule,
   declareTypeAlias,
@@ -85,6 +92,7 @@ import { anyTypeAnnotation,
   exportNamespaceSpecifier,
   exportSpecifier,
   file,
+  functionDeclaration,
   functionTypeAnnotation,
   functionTypeParam,
   genericTypeAnnotation,
@@ -107,6 +115,7 @@ import { anyTypeAnnotation,
   objectTypeSpreadProperty,
   program,
   qualifiedTypeIdentifier,
+  returnStatement,
   stringLiteralTypeAnnotation,
   stringTypeAnnotation,
   symbolTypeAnnotation,
@@ -120,8 +129,7 @@ import { anyTypeAnnotation,
   typeofTypeAnnotation,
   unaryExpression,
   unionTypeAnnotation,
-  variableDeclaration,
-  variableDeclarator,
+  variableDeclaration, variableDeclarator,
   variance,
   voidTypeAnnotation } from '@babel/types';
 import { toFlowModuleBlockStatement } from './toFlowModule/toFlowModule';
@@ -1616,6 +1624,11 @@ function transformIdentifier(
       transformTSTypeAnnotation(input.typeAnnotation, ctx),
     );
   }
+
+  if (input.optional === true) {
+    id.optional = input.optional;
+  }
+
   return copyComments(input, id);
 }
 
@@ -1656,12 +1669,99 @@ function transformVariableDeclaration(
   ];
 }
 
+function transformTSDeclareFunction(
+  input: TSDeclareFunction,
+  ctx: TransformContext,
+): DeclareFunction {
+  if (input.declare !== true) {
+    throw new Error('transformTSDeclareFunction: not supported declare must be true');
+  }
+
+  if (input.id === null) {
+    throw new Error('transformTSDeclareFunction: not supported id must be not null');
+  }
+
+  const id = transformIdentifier(input.id, ctx);
+
+  const [params, restParam] = transformFunctionParams(input.params, ctx);
+
+  const returnType = input.returnType == null || input.returnType.type === 'Noop'
+    ? anyTypeAnnotation()
+    : transformTSTypeAnnotation(input.returnType, ctx);
+
+  const typeParams = input.typeParameters == null || input.typeParameters.type === 'Noop'
+    ? null
+    : transformTSTypeParameterDeclaration(input.typeParameters, ctx);
+
+  id.typeAnnotation = typeAnnotation(
+    functionTypeAnnotation(
+      typeParams,
+      params,
+      restParam,
+      returnType,
+    ),
+  );
+
+  return copyComments(
+    input, declareFunction(
+      id,
+    ),
+  );
+}
+
+function transformFunctionDeclaration(
+  input: FunctionDeclaration,
+  ctx: TransformContext,
+): FunctionDeclaration {
+  const fn = functionDeclaration(
+    input.id == null ? null : transformIdentifier(input.id, ctx),
+    input.params.map((p) => {
+      if (p.type === 'Identifier') {
+        return transformIdentifier(p, ctx);
+      }
+
+      throw new Error('transformFunctionDeclaration: not supported');
+    }),
+    transformBlockStatement(input.body, ctx),
+    input.generator,
+    input.async,
+  );
+
+  if (input.returnType != null && input.returnType.type === 'TSTypeAnnotation') {
+    fn.returnType = typeAnnotation(
+      transformTSTypeAnnotation(input.returnType, ctx),
+    );
+  }
+
+  if (input.typeParameters != null && input.typeParameters.type === 'TSTypeParameterDeclaratio') {
+    fn.typeParameters = transformTSTypeParameterDeclaration(
+      input.typeParameters,
+      ctx,
+    );
+  }
+
+  return copyComments(
+    input,
+    fn,
+  );
+}
+
+function transformBlockStatement(
+  input: BlockStatement,
+  ctx: TransformContext,
+): BlockStatement {
+  return blockStatement(
+    input.body.flatMap(s => transformStatement(s, ctx)),
+    input.directives,
+  );
+}
+
 function transformDeclaration(
   input: Declaration | null,
   ctx: TransformContext,
 ): $ReadOnlyArray<
-  DeclareClass | DeclareInterface | DeclareTypeAlias
-  | DeclareVariable | InterfaceDeclaration | TypeAlias | VariableDeclaration
+  DeclareClass | DeclareFunction | DeclareInterface | DeclareTypeAlias
+  | DeclareVariable | FunctionDeclaration | InterfaceDeclaration | TypeAlias | VariableDeclaration
 > {
   if (input === null) {
     return [];
@@ -1686,6 +1786,12 @@ function transformDeclaration(
         return [output];
       }
       return [];
+    }
+    case 'TSDeclareFunction': {
+      return [transformTSDeclareFunction(input, ctx)];
+    }
+    case 'FunctionDeclaration': {
+      return [transformFunctionDeclaration(input, ctx)];
     }
     default:
       console.log('[transformDeclaration]: not supported', input.type);
@@ -1712,6 +1818,20 @@ function transformExportNamespaceSpecifier(
   ctx: TransformContext,
 ) {
   return copyComments(input, exportNamespaceSpecifier(transformIdentifier(input.exported, ctx)));
+}
+
+function transformReturnStatement(
+  input: ReturnStatement,
+  ctx: TransformContext,
+): ReturnStatement {
+  return copyComments(
+    input,
+    returnStatement(
+      input.argument == null
+        ? null
+        : transformExpression(input.argument, ctx),
+    ),
+  );
 }
 
 function transformStatement(
@@ -1838,6 +1958,17 @@ function transformStatement(
           ];
         }
 
+        if (declaration !== null && declaration.type === 'FunctionDeclaration') {
+          const exportStatement = exportNamedDeclaration(
+            copyComments(input, declaration),
+            [],
+            input.source,
+          );
+          return [
+            exportStatement,
+          ];
+        }
+
         return [copyComments(input, declareExportDeclaration(declaration, [], input.source))];
       });
     }
@@ -1889,6 +2020,8 @@ function transformStatement(
       );
       return [copyComments(input, emptyStatement())];
     }
+    case 'ReturnStatement':
+      return [transformReturnStatement(input, ctx)];
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
       // eslint-disable-next-line no-unused-vars
