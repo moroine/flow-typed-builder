@@ -2,7 +2,7 @@
   "name": "flow-typed-builder",
   "version": "0.0.0-development",
   "description": "flow-typed-builder",
-  "main": "index.js",
+  "main": "lib/index.js",
   "engines": {
     "node": ">=16"
   },
