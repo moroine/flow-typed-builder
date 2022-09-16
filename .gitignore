@@ -92,3 +92,5 @@ typings/
 
 # Build artefacts
 lib
+
+.DS_Store

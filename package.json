@@ -33,16 +33,16 @@
     "babel-jest": "^27.4.6",
     "chalk": "^4.1.2",
     "eslint": "^7.32.0",
-    "eslint-config-nugit": "^2.0.2",
-    "flow-bin": "^0.170.0",
+    "eslint-config-nugit": "^2.0.3",
+    "flow-bin": "^0.186.0",
     "husky": "^7.0.4",
     "jest": "^27.4.7",
     "jest-specific-snapshot": "^5.0.0"
   },
   "dependencies": {
-    "@babel/generator": "^7.16.8",
-    "@babel/parser": "^7.16.12",
-    "@babel/types": "^7.16.8",
+    "@babel/generator": "^7.18.13",
+    "@babel/parser": "^7.18.13",
+    "@babel/types": "^7.18.13",
     "mongo": "^0.1.0"
   }
 }

@@ -62,12 +62,15 @@ import type { ArrayPattern,
   TSTypeParameter,
   TSTypeParameterDeclaration,
   TSTypeParameterInstantiation,
+  TSTypeQuery,
   TSTypeReference,
   TypeAlias,
   TypeAnnotation,
   TypeParameter,
   TypeParameterDeclaration,
   TypeParameterInstantiation,
+  TypeofTypeAnnotation,
+  UnaryExpression,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
 import { addComment,
@@ -902,6 +905,26 @@ function transformTSTypeReference(
   );
 }
 
+function transformTSTypeQuery(
+  input: TSTypeQuery,
+  ctx: TransformContext,
+): TypeofTypeAnnotation {
+  if (input.exprName.type === 'TSImportType') {
+    console.warn('transformTSTypeQuery: TSImportType not supported');
+  }
+
+  return copyComments(
+    input,
+    typeofTypeAnnotation(
+      input.exprName.type === 'TSImportType'
+        ? anyTypeAnnotation()
+        : genericTypeAnnotation(
+          transformTSEntityName(input.exprName),
+        ),
+    ),
+  );
+}
+
 function transformTsType(
   input: TSType,
   ctx: TransformContext,
@@ -1082,6 +1105,8 @@ function transformTsType(
     case 'TSConditionalType': {
       return transformTSConditionalType(input, ctx);
     }
+    case 'TSTypeQuery':
+      return transformTSTypeQuery(input, ctx);
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
       // eslint-disable-next-line no-unused-vars
@@ -1153,7 +1178,15 @@ function transformTSEntityName(
   input: TSEntityName,
 ): Identifier | QualifiedTypeIdentifier {
   if (input.type === 'Identifier') {
-    return input;
+    switch (input.name) {
+      case 'Readonly':
+        return copyComments(
+          input,
+          identifier('$ReadOnly'),
+        );
+      default:
+        return input;
+    }
   }
 
   return copyComments(
