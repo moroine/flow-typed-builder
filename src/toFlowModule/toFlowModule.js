@@ -9,14 +9,13 @@ function toFlowModuleBlockStatement(
   return blockStatement(statements.map((statement) => {
     switch (statement.type) {
       case 'ExportNamedDeclaration': {
-        if (statement.declaration?.type === 'InterfaceDeclaration') {
+        const { declaration } = statement;
+        if (declaration?.type === 'InterfaceDeclaration') {
           if (statement.specifiers && statement.specifiers.length > 0) {
             console.log('toFlowModuleBlockStatement: ExportNamedDeclaration with specifiers not suported');
           }
 
-          return declareExportDeclaration(
-            statement.declaration,
-          );
+          return declareExportDeclaration(declaration);
         }
 
         return statement;

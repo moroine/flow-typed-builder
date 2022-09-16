@@ -1105,7 +1105,7 @@ function transformTsType(
       return transformTSConditionalType(input, ctx);
     }
     case 'TSTypeQuery':
-      return transformTSTypeQuery(input, ctx);
+      return transformTSTypeQuery(input);
     default: {
       console.log(`transformTsType: not supported ${input.type}`, input);
       // eslint-disable-next-line no-unused-vars
