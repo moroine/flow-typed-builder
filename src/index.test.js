@@ -14,11 +14,8 @@ async function readFile(path) {
 }
 
 async function executeTest(name) {
-  const [input, expected] = await Promise.all([
-    readFile(`${__dirname}/tests/fixtures/${name}/input.ts`),
-    readFile(`${__dirname}/tests/fixtures/${name}/expected.js`),
-  ]);
-  const output = tsToFlow(input);
+  const expected = await readFile(`${__dirname}/tests/fixtures/${name}/expected.js`);
+  const output = tsToFlow(`${__dirname}/tests/fixtures/${name}/input.ts`, 'file');
 
   expect(output).toBe(expected);
   // $FlowExpectedError[incompatible-call]
@@ -51,8 +48,7 @@ describe('interface', () => {
 });
 
 test.skip('should mongo %s', async () => {
-  const input = await readFile(`${__dirname}/tests/fixtures/mongo/input.ts`);
-  const output = tsToFlow(input);
+  const output = tsToFlow(`${__dirname}/tests/fixtures/mongo/input.ts`, 'file');
 
   // fs.writeFileSync(`${__dirname}/tests/fixtures/mongo/expected.js`, output);
   // $FlowExpectedError[incompatible-call]

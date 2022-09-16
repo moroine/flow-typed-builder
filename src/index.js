@@ -2,6 +2,7 @@
 
 /* eslint-disable no-use-before-define, no-console */
 
+import { readFileSync } from 'fs';
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
 import type { ArrayPattern,
@@ -2391,8 +2392,12 @@ function transformProgram(input: Program): Program {
   ));
 }
 
-export function tsToFlow(input: string): string {
-  const typescriptAst = parse(input, {
+export function tsToFlow(input: string, type: 'content' | 'file'): string {
+  const content = type === 'content'
+    ? input
+    : readFileSync(input, 'utf8');
+
+  const typescriptAst = parse(content, {
     plugins: ['typescript'],
     tokens: true,
     sourceType: 'module',
