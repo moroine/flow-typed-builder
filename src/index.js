@@ -70,7 +70,6 @@ import type { ArrayPattern,
   TypeParameterDeclaration,
   TypeParameterInstantiation,
   TypeofTypeAnnotation,
-  UnaryExpression,
   VariableDeclaration,
   VariableDeclarator } from '@babel/types';
 import { addComment,
@@ -907,7 +906,7 @@ function transformTSTypeReference(
 
 function transformTSTypeQuery(
   input: TSTypeQuery,
-  ctx: TransformContext,
+  // ctx: TransformContext,
 ): TypeofTypeAnnotation {
   if (input.exprName.type === 'TSImportType') {
     console.warn('transformTSTypeQuery: TSImportType not supported');
