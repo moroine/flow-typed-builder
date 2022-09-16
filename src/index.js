@@ -24,6 +24,8 @@ import type { ArrayPattern,
   FunctionTypeParam,
   GenericTypeAnnotation,
   Identifier,
+  ImportDeclaration,
+  IndexedAccessType,
   InterfaceDeclaration,
   InterfaceExtends,
   MemberExpression,
@@ -48,6 +50,7 @@ import type { ArrayPattern,
   TSDeclareFunction,
   TSEntityName,
   TSExpressionWithTypeArguments,
+  TSImportEqualsDeclaration,
   TSInterfaceBody,
   TSInterfaceDeclaration,
   TSLiteralType,
@@ -103,6 +106,7 @@ import { addComment,
   genericTypeAnnotation,
   identifier,
   importDeclaration,
+  importDefaultSpecifier,
   indexedAccessType,
   inheritsComments,
   interfaceDeclaration,
@@ -134,7 +138,8 @@ import { addComment,
   typeofTypeAnnotation,
   unaryExpression,
   unionTypeAnnotation,
-  variableDeclaration, variableDeclarator,
+  variableDeclaration,
+  variableDeclarator,
   variance,
   voidTypeAnnotation } from '@babel/types';
 import { toFlowModuleBlockStatement } from './toFlowModule/toFlowModule';
@@ -167,18 +172,13 @@ function transformTSTypeAnnotation(
 
 function convertMemberExpressionIdentifier(
   input: MemberExpression,
-): Identifier | null {
+  // eslint-disable-next-line no-unused-vars
+  ctx: TransformContext,
+): Identifier | IndexedAccessType | null {
   const { object, property } = input;
   if (object.type !== 'Identifier') {
     console.log(
       `[convertMemberExpressionIdentifier]: not supported object type ${object.type}`,
-    );
-    return null;
-  }
-
-  if (object.name !== 'Symbol') {
-    console.log(
-      `[convertMemberExpressionIdentifier]: not supported object name ${object.name}`,
     );
     return null;
   }
@@ -188,6 +188,13 @@ function convertMemberExpressionIdentifier(
       `[convertMemberExpressionIdentifier]: not supported property type ${property.type}`,
     );
     return null;
+  }
+
+  if (object.name !== 'Symbol') {
+    return indexedAccessType(
+      genericTypeAnnotation(object),
+      stringLiteralTypeAnnotation(property.name),
+    );
   }
 
   const knownSymbols = [
@@ -219,7 +226,6 @@ function convertMemberExpressionIdentifier(
 
 function getObjectPropertyKey(
   inputKey,
-  // eslint-disable-next-line no-unused-vars
   ctx: TransformContext,
 ) {
   if (
@@ -234,7 +240,7 @@ function getObjectPropertyKey(
   }
 
   const key = inputKey.type === 'MemberExpression'
-    ? convertMemberExpressionIdentifier(inputKey)
+    ? convertMemberExpressionIdentifier(inputKey, ctx)
     : inputKey;
 
   if (key === null) {
@@ -264,6 +270,17 @@ function transformTSMethodSignature(
     return copyComments(
       input,
       objectTypeIndexer(null, anyTypeAnnotation(), value),
+    );
+  }
+
+  if (key.type === 'IndexedAccessType') {
+    return copyComments(
+      input,
+      objectTypeIndexer(
+        null,
+        key,
+        input.optional === true ? nullableTypeAnnotation(value) : value,
+      ),
     );
   }
 
@@ -322,6 +339,17 @@ function transformTSPropertySignature(
     );
   }
 
+  if (key.type === 'IndexedAccessType') {
+    return copyComments(
+      input,
+      objectTypeIndexer(
+        null,
+        key,
+        input.optional === true ? nullableTypeAnnotation(value) : value,
+      ),
+    );
+  }
+
   if (
     input.computed !== true
     || (key.type === 'Identifier' && ctx.variables[key.name] == null)
@@ -355,7 +383,7 @@ function transformTSPropertySignature(
 function transformTSTypeElement(
   input: TSTypeElement,
   ctx: TransformContext,
-): ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty {
+): ObjectTypeCallProperty | ObjectTypeIndexer | ObjectTypeProperty | null {
   switch (input.type) {
     case 'TSCallSignatureDeclaration': {
       return copyComments(
@@ -373,9 +401,10 @@ function transformTSTypeElement(
     }
     case 'TSConstructSignatureDeclaration': {
       if (input.typeAnnotation == null) {
-        throw new Error(
+        console.log(
           'transformTSTypeElement: TSConstructSignatureDeclaration not supported empty typeAnnotation',
         );
+        return null;
       }
 
       const prop = copyComments(
@@ -392,27 +421,31 @@ function transformTSTypeElement(
     }
     case 'TSIndexSignature': {
       if (input.parameters.length !== 1) {
-        throw new Error(
+        console.log(
           '[transformTSTypeElement]: TSIndexSignature supports only identifiers',
         );
+        return null;
       }
       const [id] = input.parameters;
       if (id == null && id.type !== 'Identifier') {
-        throw new Error(
+        console.log(
           `[transformTSTypeElement]: TSIndexSignature non-identifier not supported ${id.type}`,
         );
+        return null;
       }
 
       if (id.typeAnnotation == null) {
-        throw new Error(
+        console.log(
           '[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation',
         );
+        return null;
       }
 
       if (id.typeAnnotation.type !== 'TSTypeAnnotation') {
-        throw new Error(
+        console.log(
           `[transformTSTypeElement]: TSIndexSignature not supported typeAnnotation ${id.typeAnnotation.type}`,
         );
+        return null;
       }
 
       // console.log(id.typeAnnotation);
@@ -430,9 +463,10 @@ function transformTSTypeElement(
         input.typeAnnotation == null
         || input.typeAnnotation.type === 'Noop'
       ) {
-        throw new Error(
+        console.log(
           '[transformTSTypeElement]: TSIndexSignature not supported empty typeAnnotation',
         );
+        return null;
       }
       const value = transformTSTypeAnnotation(input.typeAnnotation, ctx);
 
@@ -442,7 +476,8 @@ function transformTSTypeElement(
       );
     }
     default: {
-      throw new Error(`[transformTSTypeElement]: not supported ${input.type}`);
+      console.log(`[transformTSTypeElement]: not supported ${input.type}`);
+      return null;
     }
   }
 }
@@ -576,7 +611,8 @@ function transformPatternLike(
     case 'RestElement':
       return transformRestElement(input, ctx).typeAnnotation;
     default: {
-      throw new Error(`[transformPatternLike]: not supported ${input.type}`);
+      console.log(`[transformPatternLike]: not supported ${input.type}`);
+      return anyTypeAnnotation();
     }
   }
 }
@@ -726,7 +762,13 @@ function transformTSInterfaceBody(
   const out = copyComments(
     input,
     createObjectTypeAnnotation(
-      input.body.map(s => transformTSTypeElement(s, ctx)),
+      input.body.reduce((acc, s) => {
+        const output = transformTSTypeElement(s, ctx);
+        if (output !== null) {
+          acc.push(output);
+        }
+        return acc;
+      }, []),
     ),
   );
   out.inexact = null;
@@ -766,9 +808,10 @@ function transformTSLiteralTypeElement(
       );
     case 'UnaryExpression': {
       if (input.argument.type !== 'NumericLiteral' || input.operator !== '-') {
-        throw new Error(
+        console.log(
           `transformTSLiteralTypeElement/UnaryExpression: not supported ${input.operator} ${input.argument.type}`,
         );
+        return anyTypeAnnotation();
       }
       return copyComments(
         input,
@@ -786,10 +829,10 @@ function transformTSLiteralTypeElement(
       );
     }
     default: {
-      console.log(input);
-      throw new Error(
+      console.log(
         `transformTSLiteralTypeElement: not supported ${input.type}`,
       );
+      return anyTypeAnnotation();
     }
   }
 }
@@ -934,7 +977,13 @@ function transformTsType(
       return copyComments(
         input,
         createObjectTypeAnnotation(
-          input.members.map(m => transformTSTypeElement(m, ctx)),
+          input.members.reduce((acc, s) => {
+            const output = transformTSTypeElement(s, ctx);
+            if (output !== null) {
+              acc.push(output);
+            }
+            return acc;
+          }, []),
         ),
       );
     }
@@ -1402,9 +1451,10 @@ function transformClassDeclarationBody(
         input.key.type !== 'Identifier'
         && input.key.type !== 'StringLiteral'
       ) {
-        throw new Error(
+        console.log(
           `transformClassDeclarationBody: ClassMethod not supported key ${input.key.type}`,
         );
+        return null;
       }
 
       if (
@@ -1444,18 +1494,20 @@ function transformClassDeclarationBody(
         && input.key.type !== 'StringLiteral'
         && input.key.type !== 'MemberExpression'
       ) {
-        throw new Error(
+        console.log(
           `transformClassDeclarationBody: ClassProperty not supported key ${input.key.type}`,
         );
+        return null;
       }
 
       const key = input.key.type === 'MemberExpression'
-        ? convertMemberExpressionIdentifier(input.key)
+        ? convertMemberExpressionIdentifier(input.key, ctx)
         : input.key;
       if (key === null) {
-        throw new Error(
+        console.log(
           `transformTSTypeElement: TSPropertySignature not supported key ${input.key.type}`,
         );
+        return null;
       }
 
       const value = input.typeAnnotation != null
@@ -1473,6 +1525,17 @@ function transformClassDeclarationBody(
           objectTypeIndexer(
             null,
             typeofTypeAnnotation(genericTypeAnnotation(key)),
+            input.optional === true ? nullableTypeAnnotation(value) : value,
+          ),
+        );
+      }
+
+      if (key.type === 'IndexedAccessType') {
+        return copyComments(
+          input,
+          objectTypeIndexer(
+            null,
+            key,
             input.optional === true ? nullableTypeAnnotation(value) : value,
           ),
         );
@@ -1536,18 +1599,20 @@ function transformClassDeclarationBody(
         && input.key.type !== 'StringLiteral'
         && input.key.type !== 'MemberExpression'
       ) {
-        throw new Error(
+        console.log(
           `transformClassDeclarationBody: ClassMethod not supported key ${input.key.type}`,
         );
+        return null;
       }
 
       const key = input.key.type === 'MemberExpression'
-        ? convertMemberExpressionIdentifier(input.key)
+        ? convertMemberExpressionIdentifier(input.key, ctx)
         : input.key;
       if (key === null) {
-        throw new Error(
+        console.log(
           `transformTSTypeElement: TSPropertySignature not supported key ${input.key.type}`,
         );
+        return null;
       }
 
       if (
@@ -1559,6 +1624,17 @@ function transformClassDeclarationBody(
           objectTypeIndexer(
             null,
             typeofTypeAnnotation(genericTypeAnnotation(input.key)),
+            input.optional === true ? nullableTypeAnnotation(value) : value,
+          ),
+        );
+      }
+
+      if (key.type === 'IndexedAccessType') {
+        return copyComments(
+          input,
+          objectTypeIndexer(
+            null,
+            key,
             input.optional === true ? nullableTypeAnnotation(value) : value,
           ),
         );
@@ -1716,11 +1792,12 @@ function transformIdentifier(
 function transformVariableDeclaratorToDeclareVariable(
   input: VariableDeclarator,
   ctx: TransformContext,
-) {
+): DeclareVariable | null {
   if (input.id.type !== 'Identifier') {
-    throw new Error(
+    console.log(
       'transformVariableDeclaratorToDeclareVariable: declaration variable not supported',
     );
+    return null;
   }
   const inputId = input.id;
   const id = transformIdentifier(inputId, ctx);
@@ -1739,7 +1816,17 @@ function transformVariableDeclaration(
   ctx: TransformContext,
 ): $ReadOnlyArray<DeclareVariable | VariableDeclaration> {
   if (input.declare === true) {
-    return input.declarations.map(d => transformVariableDeclaratorToDeclareVariable(d, ctx));
+    return input.declarations.reduce(
+      (acc, d) => {
+        const o = transformVariableDeclaratorToDeclareVariable(d, ctx);
+        if (o !== null) {
+          acc.push(o);
+        }
+
+        return acc;
+      },
+      [],
+    );
   }
 
   return [
@@ -1753,13 +1840,10 @@ function transformVariableDeclaration(
 function transformTSDeclareFunction(
   input: TSDeclareFunction,
   ctx: TransformContext,
-): DeclareFunction {
-  // if (input.declare !== true) {
-  //   throw new Error('transformTSDeclareFunction: not supported declare must be true');
-  // }
-
+): DeclareFunction | null {
   if (input.id === null) {
-    throw new Error('transformTSDeclareFunction: not supported id must be not null');
+    console.log('transformTSDeclareFunction: not supported id must be not null');
+    return null;
   }
 
   const id = transformIdentifier(input.id, ctx);
@@ -1869,7 +1953,11 @@ function transformDeclaration(
       return [];
     }
     case 'TSDeclareFunction': {
-      return [transformTSDeclareFunction(input, ctx)];
+      const output = transformTSDeclareFunction(input, ctx);
+      if (output != null) {
+        return [output];
+      }
+      return [];
     }
     case 'FunctionDeclaration': {
       return [transformFunctionDeclaration(input, ctx)];
@@ -1913,6 +2001,30 @@ function transformReturnStatement(
         : transformExpression(input.argument, ctx),
     ),
   );
+}
+
+function transformTSImportEqualsDeclaration(
+  input: TSImportEqualsDeclaration,
+  // ctx: TransformContext,
+): ImportDeclaration[] {
+  const { moduleReference } = input;
+  if (moduleReference.type !== 'TSExternalModuleReference') {
+    console.log('TSImportEqualsDeclaration: only supports TSExternalModuleReference');
+    return [];
+  }
+
+  const output = importDeclaration(
+    [importDefaultSpecifier(
+      input.id,
+    )],
+    moduleReference.expression,
+  );
+
+  if (input.importKind === 'type') {
+    output.importKind = 'type';
+  }
+
+  return [copyComments(input, output)];
 }
 
 function transformStatement(
@@ -2121,6 +2233,10 @@ function transformStatement(
     }
     case 'ReturnStatement':
       return [transformReturnStatement(input, ctx)];
+
+    case 'TSImportEqualsDeclaration':
+      return transformTSImportEqualsDeclaration(input);
+
     default: {
       console.log(`transformStatement: not supported ${input.type}`);
       // eslint-disable-next-line no-unused-vars
