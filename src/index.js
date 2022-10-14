@@ -2460,17 +2460,24 @@ function generateAssignable() {
   );
 }
 
-function transformProgram(input: Program): Program {
+function transformProgram(
+  input: Program,
+  asModule: boolean,
+): Program {
   const ctx = {
     interfaces: {},
     variables: {},
     requireIfHelper: false,
   };
 
-  const body = input.body.reduce((acc, s) => {
+  let body = input.body.reduce((acc, s) => {
     acc.push(...transformStatement(s, ctx));
     return acc;
   }, []);
+
+  if (asModule) {
+    body = [toFlowModuleBlockStatement(body)];
+  }
 
   const helpers = [];
 
@@ -2487,7 +2494,11 @@ function transformProgram(input: Program): Program {
   ));
 }
 
-export function tsToFlow(input: string, type: 'content' | 'file'): string {
+export function tsToFlow(
+  input: string,
+  type: 'content' | 'file',
+  asModule: boolean,
+): string {
   const content = type === 'content'
     ? input
     : readFileSync(input, 'utf8');
@@ -2498,7 +2509,7 @@ export function tsToFlow(input: string, type: 'content' | 'file'): string {
     sourceType: 'module',
   });
 
-  const flowAst = file(transformProgram(typescriptAst.program));
+  const flowAst = file(transformProgram(typescriptAst.program, asModule));
 
   const { code } = generate(flowAst, {
     jsescOption: { compact: false, es6: true },
