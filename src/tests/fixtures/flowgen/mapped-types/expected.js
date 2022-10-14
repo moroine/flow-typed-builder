@@ -9,7 +9,8 @@ type SourceObject = {
   ...
 };
 type MappedUnion = $ObjMapi<{
-  [k: SourceUnion]: any
+  [k: SourceUnion]: any,
+  ...
 }, <K>(K) => Ref<number>>;
 type MappedObj = $ObjMapi<SourceObject, <K>(K) => Ref<SourceObject[K]>>;
 type ConstantKey = MappedObj["a"];

@@ -42,6 +42,7 @@ describe('interface', () => {
     ['intersection'],
     ['keyof'],
     ['readonly'],
+    ['literal-properties'],
   ])('should transform %s', async (name) => {
     await executeTest(name);
   });

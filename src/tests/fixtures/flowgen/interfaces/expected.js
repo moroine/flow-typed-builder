@@ -72,7 +72,7 @@ interface A {
 
 interface ObjectBinding {
   (): void,
-  ({}): void,
+  ({...}): void,
 } // should handle untyped array binding pattern
 
 interface ArrayBinding {
