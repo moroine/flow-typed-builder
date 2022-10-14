@@ -93,4 +93,6 @@ typings/
 # Build artefacts
 lib
 
-.DS_Store
+flow-typed
+
+src/tests/fixtures/
