@@ -49,7 +49,7 @@ describe('interface', () => {
 });
 
 test.skip('should mongo %s', async () => {
-  const output = tsToFlow(`${__dirname}/tests/fixtures/mongo/input.ts`, 'file');
+  const output = tsToFlow(`${__dirname}/tests/fixtures/mongo/input.ts`, 'file', false);
 
   // fs.writeFileSync(`${__dirname}/tests/fixtures/mongo/expected.js`, output);
   // $FlowExpectedError[incompatible-call]
