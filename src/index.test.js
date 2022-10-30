@@ -15,7 +15,7 @@ async function readFile(path) {
 
 async function executeTest(name) {
   const expected = await readFile(`${__dirname}/tests/fixtures/${name}/expected.js`);
-  const output = tsToFlow(`${__dirname}/tests/fixtures/${name}/input.ts`, 'file');
+  const output = tsToFlow(`${__dirname}/tests/fixtures/${name}/input.ts`, 'file', false);
 
   expect(output).toBe(expected);
   // $FlowExpectedError[incompatible-call]

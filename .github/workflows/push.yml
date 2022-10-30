@@ -31,5 +31,5 @@ jobs:
         if: ${{ github.actor != 'dependabot[bot]' }}
       - run: npm run flow
         if: ${{ github.actor != 'dependabot[bot]' }}
-      - run: npm test
+      - uses: artiomtr/jest-coverage-report-action@v2
         if: ${{ github.actor != 'dependabot[bot]' }}
