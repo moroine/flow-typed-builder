@@ -229,7 +229,7 @@ function convertMemberExpressionIdentifier(
 }
 
 function getObjectPropertyKey(
-  inputKey,
+  inputKey: Expression,
   ctx: TransformContext,
 ) {
   if (

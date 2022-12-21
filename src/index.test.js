@@ -3,7 +3,7 @@
 import fs from 'fs';
 import { tsToFlow } from './index';
 
-async function readFile(path) {
+async function readFile(path: string) {
   return new Promise((resolve, reject) => {
     fs.readFile(path, 'utf8', (err, content) => {
       if (err) {
@@ -13,7 +13,7 @@ async function readFile(path) {
   });
 }
 
-async function executeTest(name) {
+async function executeTest(name: string) {
   const expected = await readFile(`${__dirname}/tests/fixtures/${name}/expected.js`);
   const output = tsToFlow(`${__dirname}/tests/fixtures/${name}/input.ts`, 'file', false);
 

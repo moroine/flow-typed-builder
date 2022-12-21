@@ -1,7 +1,5 @@
 class Subscribable<T> {}
-
 class Operator<T, R> {}
-
 declare class Observable<T> mixins Subscribable<T> {
   create: Function,
   static create: Function,
