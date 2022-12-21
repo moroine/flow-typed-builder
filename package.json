@@ -16,7 +16,14 @@
     "semantic-release": "semantic-release"
   },
   "release": {
-    "branches": ["main", { "name": "dev", "channel": "beta", "prerelease": "beta" }]
+    "branches": [
+      "main",
+      {
+        "name": "dev",
+        "channel": "beta",
+        "prerelease": "beta"
+      }
+    ]
   },
   "repository": {
     "type": "git",
